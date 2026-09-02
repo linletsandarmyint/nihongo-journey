@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Settings2,
   Volume2,
 } from "lucide-react";
 
@@ -32,6 +33,20 @@ function KanjiChapter() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+
+  // =====================================================
+  // Vocabulary Column Visibility
+  // =====================================================
+
+  const [visibleColumns, setVisibleColumns] = useState({
+    kanji: true,
+    hiragana: true,
+    meaning: true,
+    audio: true,
+    status: true,
+  });
+
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
 
   // =====================================================
   // Studied Vocabulary
@@ -71,6 +86,7 @@ function KanjiChapter() {
   useEffect(() => {
     setCurrentIndex(0);
     setIsFlipped(false);
+    setShowColumnMenu(false);
 
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -127,11 +143,43 @@ function KanjiChapter() {
       ?.vocabulary ?? [];
 
   // =====================================================
+  // Dynamic Vocabulary Grid
+  // =====================================================
+
+  const gridColumns = [
+    visibleColumns.kanji ? "0.9fr" : null,
+    visibleColumns.hiragana ? "1fr" : null,
+    visibleColumns.meaning ? "1.3fr" : null,
+    visibleColumns.audio ? "55px" : null,
+    visibleColumns.status ? "65px" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  // =====================================================
   // Vocabulary ID
   // =====================================================
 
   function getVocabularyId(word: string, reading: string) {
     return `${word}__${reading}`;
+  }
+
+  // =====================================================
+  // Toggle Vocabulary Column
+  // =====================================================
+
+  function toggleColumn(column: keyof typeof visibleColumns) {
+    const visibleCount = Object.values(visibleColumns).filter(Boolean).length;
+
+    // Don't allow all columns to be hidden
+    if (visibleColumns[column] && visibleCount === 1) {
+      return;
+    }
+
+    setVisibleColumns((previous) => ({
+      ...previous,
+      [column]: !previous[column],
+    }));
   }
 
   // =====================================================
@@ -382,19 +430,163 @@ function KanjiChapter() {
                   <div className="rounded-3xl bg-gradient-to-br from-pink-50 to-purple-50 p-3 sm:p-5">
                     {/* Vocabulary Header */}
 
-                    <div className="mb-4 flex items-center gap-3 px-1">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
-                        <span className="text-xl">📚</span>
+                    <div className="mb-4 flex items-start justify-between gap-3 px-1">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
+                          <span className="text-xl">📚</span>
+                        </div>
+
+                        <div>
+                          <p className="text-sm font-extrabold tracking-wide text-pink-500">
+                            VOCABULARY
+                          </p>
+
+                          <p className="mt-0.5 text-xs text-gray-400">
+                            Words using {currentKanji.kanji}
+                          </p>
+                        </div>
                       </div>
 
-                      <div>
-                        <p className="text-sm font-extrabold tracking-wide text-pink-500">
-                          VOCABULARY
-                        </p>
+                      {/* =================================================
+                          COLUMN SETTINGS
+                      ================================================= */}
 
-                        <p className="mt-0.5 text-xs text-gray-400">
-                          Words using {currentKanji.kanji}
-                        </p>
+                      <div className="relative shrink-0">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+
+                            setShowColumnMenu((previous) => !previous);
+                          }}
+                          className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-bold text-gray-500 shadow-sm transition hover:bg-pink-50 hover:text-pink-500 active:scale-95"
+                          aria-label="Show or hide vocabulary columns"
+                          title="Show or hide columns"
+                        >
+                          <Settings2 size={15} />
+
+                          <span className="hidden sm:inline">Columns</span>
+                        </button>
+
+                        {/* =================================================
+                            COLUMN MENU
+                        ================================================= */}
+
+                        {showColumnMenu && (
+                          <div
+                            onClick={(event) => event.stopPropagation()}
+                            className="absolute right-0 top-11 z-30 w-44 rounded-2xl bg-white p-3 shadow-lg ring-1 ring-pink-100"
+                          >
+                            <p className="mb-2 px-2 text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                              Show columns
+                            </p>
+
+                            {/* KANJI */}
+
+                            <button
+                              type="button"
+                              onClick={() => toggleColumn("kanji")}
+                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
+                            >
+                              <span
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
+                                  visibleColumns.kanji
+                                    ? "border-pink-400 bg-pink-400 text-white"
+                                    : "border-gray-200 bg-white"
+                                }`}
+                              >
+                                {visibleColumns.kanji && (
+                                  <Check size={11} strokeWidth={3} />
+                                )}
+                              </span>
+                              Kanji
+                            </button>
+
+                            {/* HIRAGANA */}
+
+                            <button
+                              type="button"
+                              onClick={() => toggleColumn("hiragana")}
+                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
+                            >
+                              <span
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
+                                  visibleColumns.hiragana
+                                    ? "border-pink-400 bg-pink-400 text-white"
+                                    : "border-gray-200 bg-white"
+                                }`}
+                              >
+                                {visibleColumns.hiragana && (
+                                  <Check size={11} strokeWidth={3} />
+                                )}
+                              </span>
+                              Hiragana
+                            </button>
+
+                            {/* MEANING */}
+
+                            <button
+                              type="button"
+                              onClick={() => toggleColumn("meaning")}
+                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
+                            >
+                              <span
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
+                                  visibleColumns.meaning
+                                    ? "border-pink-400 bg-pink-400 text-white"
+                                    : "border-gray-200 bg-white"
+                                }`}
+                              >
+                                {visibleColumns.meaning && (
+                                  <Check size={11} strokeWidth={3} />
+                                )}
+                              </span>
+                              Meaning
+                            </button>
+
+                            {/* AUDIO */}
+
+                            <button
+                              type="button"
+                              onClick={() => toggleColumn("audio")}
+                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
+                            >
+                              <span
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
+                                  visibleColumns.audio
+                                    ? "border-pink-400 bg-pink-400 text-white"
+                                    : "border-gray-200 bg-white"
+                                }`}
+                              >
+                                {visibleColumns.audio && (
+                                  <Check size={11} strokeWidth={3} />
+                                )}
+                              </span>
+                              Audio
+                            </button>
+
+                            {/* STATUS */}
+
+                            <button
+                              type="button"
+                              onClick={() => toggleColumn("status")}
+                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
+                            >
+                              <span
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
+                                  visibleColumns.status
+                                    ? "border-pink-400 bg-pink-400 text-white"
+                                    : "border-gray-200 bg-white"
+                                }`}
+                              >
+                                {visibleColumns.status && (
+                                  <Check size={11} strokeWidth={3} />
+                                )}
+                              </span>
+                              Status
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -402,41 +594,56 @@ function KanjiChapter() {
                         VOCABULARY TABLE
                     ================================================= */}
 
-                    <div className="overflow-hidden rounded-2xl bg-white shadow-sm pr">
+                    <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
                       {/* =================================================
                           HEADER
                       ================================================= */}
 
-                      <div className="grid grid-cols-[0.9fr_1fr_1.3fr_55px_65px] items-center border-b border-pink-100 bg-pink-50/60">
+                      <div
+                        style={{
+                          gridTemplateColumns: gridColumns,
+                        }}
+                        className="grid items-center border-b border-pink-100 bg-pink-50/60"
+                      >
                         {/* KANJI */}
 
-                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-pink-500 sm:px-3 sm:text-xs">
-                          KANJI
-                        </div>
+                        {visibleColumns.kanji && (
+                          <div className="flex min-w-0 items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-pink-500 sm:px-3 sm:text-xs">
+                            KANJI
+                          </div>
+                        )}
 
                         {/* HIRAGANA */}
 
-                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-purple-500 sm:px-3 sm:text-xs">
-                          HIRAGANA
-                        </div>
+                        {visibleColumns.hiragana && (
+                          <div className="flex min-w-0 items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-purple-500 sm:px-3 sm:text-xs">
+                            HIRAGANA
+                          </div>
+                        )}
 
                         {/* MEANING */}
 
-                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-gray-500 sm:px-3 sm:text-xs">
-                          🇲🇲 MEANING
-                        </div>
+                        {visibleColumns.meaning && (
+                          <div className="flex min-w-0 items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-gray-500 sm:px-3 sm:text-xs">
+                            🇲🇲 MEANING
+                          </div>
+                        )}
 
                         {/* AUDIO */}
 
-                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-blue-500 sm:px-2 sm:text-xs">
-                          AUDIO
-                        </div>
+                        {visibleColumns.audio && (
+                          <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-blue-500 sm:px-2 sm:text-xs">
+                            AUDIO
+                          </div>
+                        )}
 
                         {/* STATUS */}
 
-                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-pink-500 sm:px-2 sm:text-xs">
-                          STATUS
-                        </div>
+                        {visibleColumns.status && (
+                          <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-pink-500 sm:px-2 sm:text-xs">
+                            STATUS
+                          </div>
+                        )}
                       </div>
 
                       {/* =================================================
@@ -455,7 +662,10 @@ function KanjiChapter() {
                         return (
                           <div
                             key={`${item.word}-${item.reading}-${index}`}
-                            className={`grid grid-cols-[0.9fr_1fr_1.3fr_55px_65px] items-center transition ${
+                            style={{
+                              gridTemplateColumns: gridColumns,
+                            }}
+                            className={`grid items-center transition ${
                               index !== vocabulary.length - 1
                                 ? "border-b border-pink-100/80"
                                 : ""
@@ -465,99 +675,113 @@ function KanjiChapter() {
                                 KANJI
                             ================================================= */}
 
-                            <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
-                              <p
-                                className={`break-words text-center text-sm font-extrabold transition sm:text-base ${
-                                  isStudied ? "text-gray-400" : "text-gray-800"
-                                }`}
-                              >
-                                {item.word}
-                              </p>
-                            </div>
+                            {visibleColumns.kanji && (
+                              <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
+                                <p
+                                  className={`break-words text-center text-sm font-extrabold transition sm:text-base ${
+                                    isStudied
+                                      ? "text-gray-400"
+                                      : "text-gray-800"
+                                  }`}
+                                >
+                                  {item.word}
+                                </p>
+                              </div>
+                            )}
 
                             {/* =================================================
                                 HIRAGANA
                             ================================================= */}
 
-                            <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
-                              <p
-                                className={`break-words text-center text-xs font-semibold transition sm:text-sm ${
-                                  isStudied
-                                    ? "text-purple-300"
-                                    : "text-purple-500"
-                                }`}
-                              >
-                                {item.reading}
-                              </p>
-                            </div>
+                            {visibleColumns.hiragana && (
+                              <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
+                                <p
+                                  className={`break-words text-center text-xs font-semibold transition sm:text-sm ${
+                                    isStudied
+                                      ? "text-purple-300"
+                                      : "text-purple-500"
+                                  }`}
+                                >
+                                  {item.reading}
+                                </p>
+                              </div>
+                            )}
 
                             {/* =================================================
                                 MEANING
                             ================================================= */}
 
-                            <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
-                              <p
-                                className={`break-words text-center text-[11px] leading-5 transition sm:text-sm ${
-                                  isStudied ? "text-gray-400" : "text-gray-600"
-                                }`}
-                              >
-                                {item.meaning}
-                              </p>
-                            </div>
+                            {visibleColumns.meaning && (
+                              <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
+                                <p
+                                  className={`break-words text-center text-[11px] leading-5 transition sm:text-sm ${
+                                    isStudied
+                                      ? "text-gray-400"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {item.meaning}
+                                </p>
+                              </div>
+                            )}
 
                             {/* =================================================
                                 AUDIO
                             ================================================= */}
 
-                            <div className="flex items-center justify-center px-1 py-4">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
+                            {visibleColumns.audio && (
+                              <div className="flex items-center justify-center px-1 py-4">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
 
-                                  speakJapanese(item.reading || item.word);
-                                }}
-                                className="flex items-center justify-center p-1 text-purple-400 transition hover:scale-110 hover:text-purple-600 active:scale-95"
-                                aria-label={`Listen to ${item.word}`}
-                                title="Listen"
-                              >
-                                <Volume2 size={17} />
-                              </button>
-                            </div>
+                                    speakJapanese(item.reading || item.word);
+                                  }}
+                                  className="flex items-center justify-center p-1 text-purple-400 transition hover:scale-110 hover:text-purple-600 active:scale-95"
+                                  aria-label={`Listen to ${item.word}`}
+                                  title="Listen"
+                                >
+                                  <Volume2 size={17} />
+                                </button>
+                              </div>
+                            )}
 
                             {/* =================================================
                                 STATUS
                             ================================================= */}
 
-                            <div className="flex items-center justify-center px-1 py-4">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
+                            {visibleColumns.status && (
+                              <div className="flex items-center justify-center px-1 py-4">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
 
-                                  toggleStudied(item.word, item.reading);
-                                }}
-                                aria-label={
-                                  isStudied
-                                    ? `Mark ${item.word} as not studied`
-                                    : `Mark ${item.word} as studied`
-                                }
-                                title={
-                                  isStudied ? "Studied ✓" : "Tap when studied"
-                                }
-                                className="flex h-8 w-8 items-center justify-center transition active:scale-90"
-                              >
-                                {isStudied ? (
-                                  <Check
-                                    size={18}
-                                    strokeWidth={3}
-                                    className="text-pink-500"
-                                  />
-                                ) : (
-                                  <span className="h-2.5 w-2.5 rounded-full bg-pink-300 transition hover:scale-125 hover:bg-pink-500" />
-                                )}
-                              </button>
-                            </div>
+                                    toggleStudied(item.word, item.reading);
+                                  }}
+                                  aria-label={
+                                    isStudied
+                                      ? `Mark ${item.word} as not studied`
+                                      : `Mark ${item.word} as studied`
+                                  }
+                                  title={
+                                    isStudied ? "Studied ✓" : "Tap when studied"
+                                  }
+                                  className="flex h-8 w-8 items-center justify-center transition active:scale-90"
+                                >
+                                  {isStudied ? (
+                                    <Check
+                                      size={18}
+                                      strokeWidth={3}
+                                      className="text-pink-500"
+                                    />
+                                  ) : (
+                                    <span className="h-2.5 w-2.5 rounded-full bg-pink-300 transition hover:scale-125 hover:bg-pink-500" />
+                                  )}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
