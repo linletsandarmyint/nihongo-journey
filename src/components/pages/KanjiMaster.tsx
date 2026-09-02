@@ -475,10 +475,7 @@ function KanjiMaster() {
               const chapterNumber = index + 1;
               const kanjiCount = chapterData.kanji_list.length;
 
-              const previewKanji = chapterData.kanji_list
-                .slice(0, 4)
-                .map((item) => item.kanji)
-                .join(" ");
+              
 
               return (
                 <Link
