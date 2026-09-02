@@ -6,7 +6,8 @@ import StudyPlan from "./components/pages/StudyPlan";
 import Progress from "./components/pages/Progress";
 import Timer from "./components/pages/Timer";
 import StudyDay from "./components/pages/StudyDay";
-
+import KanjiMaster from "./components/pages/KanjiMaster";
+import KanjiChapter from "./components/pages/KanjiChapter";
 function App() {
   return (
     <BrowserRouter>
@@ -20,7 +21,8 @@ function App() {
         <Route path="/study-plan/:day" element={<StudyDay />} />
 
         <Route path="/progress" element={<Progress />} />
-
+        <Route path="/kanji-master" element={<KanjiMaster />} />
+        <Route path="/kanji-master/:chapterId" element={<KanjiChapter />} />
         <Route path="/timer" element={<Timer />} />
       </Routes>
     </BrowserRouter>

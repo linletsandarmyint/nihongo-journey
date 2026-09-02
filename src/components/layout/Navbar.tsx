@@ -1,5 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { BarChart3, BookOpen, Clock3, Home, Menu, X } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  Clock3,
+  Home,
+  Menu,
+  X,
+  Languages,
+} from "lucide-react";
 import { useState } from "react";
 
 function Navbar() {
@@ -15,6 +23,11 @@ function Navbar() {
       name: "Study Plan",
       path: "/study-plan",
       icon: BookOpen,
+    },
+    {
+      name: "Kanji Master",
+      path: "/kanji-master",
+      icon: Languages,
     },
     {
       name: "Progress",

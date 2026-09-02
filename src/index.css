@@ -39,3 +39,23 @@ button {
 * {
   box-sizing: border-box;
 }
+/* Hide scrollbar for Kanji modal */
+.kanji-modal-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.kanji-modal-scroll::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for the entire page */
+html,
+body {
+  -ms-overflow-style: none; /* IE and old Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
