@@ -290,12 +290,12 @@ export const kanjiVocabulary: KanjiVocabulary[] = [
       {
         word: "混雑",
         reading: "こんざつ",
-        meaning: "လူများပြားကျပ်တည်းမှု",
+        meaning: "ရှုပ်ထွေးခြင်း",
       },
       {
         word: "混乱",
         reading: "こんらん",
-        meaning: "ရှုပ်ထွေးမှု",
+        meaning: "ဖရိုဖရဲဖြစ်ခြင်း",
       },
     ],
   },

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -42,9 +41,7 @@ function KanjiChapter() {
     Record<string, boolean>
   >(() => {
     try {
-      const saved = localStorage.getItem(
-        "nihongo-journey-studied-vocabulary",
-      );
+      const saved = localStorage.getItem("nihongo-journey-studied-vocabulary");
 
       return saved ? JSON.parse(saved) : {};
     } catch {
@@ -66,6 +63,19 @@ function KanjiChapter() {
       // Ignore localStorage errors
     }
   }, [studiedVocabulary]);
+
+  // =====================================================
+  // Reset when chapter changes
+  // =====================================================
+
+  useEffect(() => {
+    setCurrentIndex(0);
+    setIsFlipped(false);
+
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [chapterId]);
 
   // =====================================================
   // Chapter Not Found
@@ -97,34 +107,24 @@ function KanjiChapter() {
   // =====================================================
 
   const currentKanji = chapter.kanji_list[currentIndex];
-
   const totalWords = chapter.kanji_list.length;
 
   // =====================================================
   // Vocabulary Source
   // =====================================================
-  //
-  // Chapter 1 → kanjiVocabulary.ts
-  // Chapter 2 → kanjiChapter2.ts
-  //
-  // Later:
-  // Chapter 3 → kanjiChapter3.ts
-  // Chapter 4 → kanjiChapter4.ts
-  // =====================================================
 
   const vocabularySource =
-  chapterId === "4"
-      ? kanjiChapter4 :
-    chapterId === "3"
-      ? kanjiChapter3
-      : chapterId === "2"
-        ? kanjiChapter2
-        : kanjiVocabulary;
+    chapterId === "4"
+      ? kanjiChapter4
+      : chapterId === "3"
+        ? kanjiChapter3
+        : chapterId === "2"
+          ? kanjiChapter2
+          : kanjiVocabulary;
 
   const vocabulary =
-    vocabularySource.find(
-      (item) => item.kanji === currentKanji.kanji,
-    )?.vocabulary ?? [];
+    vocabularySource.find((item) => item.kanji === currentKanji.kanji)
+      ?.vocabulary ?? [];
 
   // =====================================================
   // Vocabulary ID
@@ -156,7 +156,9 @@ function KanjiChapter() {
       setCurrentIndex((previousIndex) => previousIndex + 1);
       setIsFlipped(false);
 
-      window.speechSynthesis.cancel();
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     }
   }
 
@@ -165,7 +167,9 @@ function KanjiChapter() {
       setCurrentIndex((previousIndex) => previousIndex - 1);
       setIsFlipped(false);
 
-      window.speechSynthesis.cancel();
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     }
   }
 
@@ -209,6 +213,7 @@ function KanjiChapter() {
     window.open(
       `https://jisho.org/search/${encodeURIComponent(`${kanji} #kanji`)}`,
       "_blank",
+      "noopener,noreferrer",
     );
   }
 
@@ -219,10 +224,9 @@ function KanjiChapter() {
   return (
     <main className="min-h-screen bg-pink-50 px-4 py-8">
       <div className="mx-auto max-w-3xl">
-
         {/* =====================================================
             BACK
-        ===================================================== */}
+        ====================================================== */}
 
         <Link
           to="/kanji-master"
@@ -234,7 +238,7 @@ function KanjiChapter() {
 
         {/* =====================================================
             HEADER
-        ===================================================== */}
+        ====================================================== */}
 
         <div className="text-center">
           <p className="text-sm font-bold uppercase tracking-widest text-pink-400">
@@ -252,32 +256,24 @@ function KanjiChapter() {
 
         {/* =====================================================
             FLASHCARD
-        ===================================================== */}
+        ====================================================== */}
 
         <div
           role="button"
           tabIndex={0}
-          onClick={() =>
-            setIsFlipped((previous) => !previous)
-          }
+          onClick={() => setIsFlipped((previous) => !previous)}
           onKeyDown={(event) => {
-            if (
-              event.key === "Enter" ||
-              event.key === " "
-            ) {
+            if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
 
-              setIsFlipped(
-                (previous) => !previous,
-              );
+              setIsFlipped((previous) => !previous);
             }
           }}
-          className="mt-8 min-h-[380px] w-full cursor-pointer rounded-[2.5rem] bg-white p-8 text-center shadow-sm transition hover:shadow-lg"
+          className="mt-8 min-h-[380px] w-full cursor-pointer rounded-[2.5rem] bg-white p-5 text-center shadow-sm transition hover:shadow-lg sm:p-8"
         >
-
           {/* =====================================================
               FRONT
-          ===================================================== */}
+          ====================================================== */}
 
           {!isFlipped ? (
             <div className="flex min-h-[320px] flex-col items-center justify-center">
@@ -290,13 +286,11 @@ function KanjiChapter() {
               </p>
             </div>
           ) : (
-
             /* =====================================================
                BACK
-            ===================================================== */
+            ====================================================== */
 
             <div className="w-full">
-
               {/* Main Kanji */}
 
               <p className="text-6xl font-bold text-gray-800">
@@ -304,18 +298,15 @@ function KanjiChapter() {
               </p>
 
               <div className="mt-8 space-y-5 text-left">
-
                 {/* =================================================
                     ONYOMI
                 ================================================= */}
 
                 <div className="rounded-2xl bg-purple-50 p-4">
-                  <p className="text-xs font-bold text-purple-500">
-                    ONYOMI
-                  </p>
+                  <p className="text-xs font-bold text-purple-500">ONYOMI</p>
 
                   {currentKanji.onyomi ? (
-                    <div className="mt-1 flex items-center justify-between gap-3">
+                    <div className="mt-2 flex items-center justify-between gap-3">
                       <p className="font-semibold text-gray-700">
                         {currentKanji.onyomi}
                       </p>
@@ -325,21 +316,17 @@ function KanjiChapter() {
                         onClick={(event) => {
                           event.stopPropagation();
 
-                          speakJapanese(
-                            currentKanji.onyomi || "",
-                          );
+                          speakJapanese(currentKanji.onyomi || "");
                         }}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-purple-500 shadow-sm transition hover:bg-purple-100 hover:text-purple-600 active:scale-95"
+                        className="shrink-0 text-purple-500 transition hover:text-purple-700 active:scale-95"
                         aria-label={`Pronounce ${currentKanji.onyomi}`}
                         title="Listen to pronunciation"
                       >
-                        <Volume2 size={18} />
+                        <Volume2 size={20} />
                       </button>
                     </div>
                   ) : (
-                    <p className="mt-1 font-semibold text-gray-700">
-                      -
-                    </p>
+                    <p className="mt-2 font-semibold text-gray-700">-</p>
                   )}
                 </div>
 
@@ -348,12 +335,10 @@ function KanjiChapter() {
                 ================================================= */}
 
                 <div className="rounded-2xl bg-blue-50 p-4">
-                  <p className="text-xs font-bold text-blue-500">
-                    KUNYOMI
-                  </p>
+                  <p className="text-xs font-bold text-blue-500">KUNYOMI</p>
 
                   {currentKanji.kunyomi ? (
-                    <div className="mt-1 flex items-center justify-between gap-3">
+                    <div className="mt-2 flex items-center justify-between gap-3">
                       <p className="font-semibold text-gray-700">
                         {currentKanji.kunyomi}
                       </p>
@@ -363,21 +348,17 @@ function KanjiChapter() {
                         onClick={(event) => {
                           event.stopPropagation();
 
-                          speakJapanese(
-                            currentKanji.kunyomi || "",
-                          );
+                          speakJapanese(currentKanji.kunyomi || "");
                         }}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-blue-500 shadow-sm transition hover:bg-blue-100 hover:text-blue-600 active:scale-95"
+                        className="shrink-0 text-blue-500 transition hover:text-blue-700 active:scale-95"
                         aria-label={`Pronounce ${currentKanji.kunyomi}`}
                         title="Listen to pronunciation"
                       >
-                        <Volume2 size={18} />
+                        <Volume2 size={20} />
                       </button>
                     </div>
                   ) : (
-                    <p className="mt-1 font-semibold text-gray-700">
-                      -
-                    </p>
+                    <p className="mt-2 font-semibold text-gray-700">-</p>
                   )}
                 </div>
 
@@ -386,11 +367,9 @@ function KanjiChapter() {
                 ================================================= */}
 
                 <div className="rounded-2xl bg-pink-50 p-4">
-                  <p className="text-xs font-bold text-pink-500">
-                    🇲🇲 MEANING
-                  </p>
+                  <p className="text-xs font-bold text-pink-500">🇲🇲 MEANING</p>
 
-                  <p className="mt-1 font-semibold text-gray-700">
+                  <p className="mt-2 font-semibold text-gray-700">
                     {currentKanji.burmese || "-"}
                   </p>
                 </div>
@@ -400,15 +379,12 @@ function KanjiChapter() {
                 ================================================= */}
 
                 {vocabulary.length > 0 && (
-                  <div className="rounded-3xl bg-gradient-to-br from-pink-50 to-purple-50 p-5">
-
+                  <div className="rounded-3xl bg-gradient-to-br from-pink-50 to-purple-50 p-3 sm:p-5">
                     {/* Vocabulary Header */}
 
-                    <div className="mb-4 flex items-center gap-3">
+                    <div className="mb-4 flex items-center gap-3 px-1">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
-                        <span className="text-xl">
-                          📚
-                        </span>
+                        <span className="text-xl">📚</span>
                       </div>
 
                       <div>
@@ -417,70 +393,84 @@ function KanjiChapter() {
                         </p>
 
                         <p className="mt-0.5 text-xs text-gray-400">
-                          Words using{" "}
-                          {currentKanji.kanji}
+                          Words using {currentKanji.kanji}
                         </p>
                       </div>
                     </div>
 
                     {/* =================================================
-                        CLEAN VOCABULARY LIST
+                        VOCABULARY TABLE
                     ================================================= */}
 
-                    <div className="overflow-hidden rounded-2xl bg-white/70">
+                    <div className="overflow-hidden rounded-2xl bg-white shadow-sm pr">
+                      {/* =================================================
+                          HEADER
+                      ================================================= */}
 
-                      {/* Header */}
+                      <div className="grid grid-cols-[0.9fr_1fr_1.3fr_55px_65px] items-center border-b border-pink-100 bg-pink-50/60">
+                        {/* KANJI */}
 
-                      <div className="grid grid-cols-[1.1fr_1.25fr_1.8fr_48px] items-center bg-white/60">
-
-                        <div className="px-2 py-3 text-center text-[10px] font-extrabold tracking-widest text-pink-500 sm:px-4 sm:text-xs">
+                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-pink-500 sm:px-3 sm:text-xs">
                           KANJI
                         </div>
 
-                        <div className="px-2 py-3 text-center text-[10px] font-extrabold tracking-widest text-purple-500 sm:px-4 sm:text-xs">
+                        {/* HIRAGANA */}
+
+                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-purple-500 sm:px-3 sm:text-xs">
                           HIRAGANA
                         </div>
 
-                        <div className="px-2 py-3 text-center text-[10px] font-extrabold tracking-widest text-gray-500 sm:px-4 sm:text-xs">
+                        {/* MEANING */}
+
+                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-gray-500 sm:px-3 sm:text-xs">
                           🇲🇲 MEANING
                         </div>
 
-                        {/* No STATUS header */}
+                        {/* AUDIO */}
 
-                        <div className="w-12" />
+                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-blue-500 sm:px-2 sm:text-xs">
+                          AUDIO
+                        </div>
+
+                        {/* STATUS */}
+
+                        <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-pink-500 sm:px-2 sm:text-xs">
+                          STATUS
+                        </div>
                       </div>
 
-                      {/* Vocabulary Rows */}
+                      {/* =================================================
+                          VOCABULARY ROWS
+                      ================================================= */}
 
                       {vocabulary.map((item, index) => {
-                        const vocabularyId =
-                          getVocabularyId(
-                            item.word,
-                            item.reading,
-                          );
+                        const vocabularyId = getVocabularyId(
+                          item.word,
+                          item.reading,
+                        );
 
                         const isStudied =
-                          studiedVocabulary[
-                            vocabularyId
-                          ] === true;
+                          studiedVocabulary[vocabularyId] === true;
 
                         return (
                           <div
                             key={`${item.word}-${item.reading}-${index}`}
-                            className={`grid grid-cols-[1.1fr_1.25fr_1.8fr_48px] items-center transition ${
-                              index !==
-                              vocabulary.length - 1
-                                ? "border-b border-pink-100/70"
+                            className={`grid grid-cols-[0.9fr_1fr_1.3fr_55px_65px] items-center transition ${
+                              index !== vocabulary.length - 1
+                                ? "border-b border-pink-100/80"
                                 : ""
-                            }`}
+                            } ${isStudied ? "bg-pink-50/30" : "bg-white"}`}
                           >
-
                             {/* =================================================
                                 KANJI
                             ================================================= */}
 
-                            <div className="flex min-w-0 items-center justify-center px-2 py-4 sm:px-4">
-                              <p className="break-words text-center text-base font-extrabold text-gray-800 sm:text-lg">
+                            <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
+                              <p
+                                className={`break-words text-center text-sm font-extrabold transition sm:text-base ${
+                                  isStudied ? "text-gray-400" : "text-gray-800"
+                                }`}
+                              >
                                 {item.word}
                               </p>
                             </div>
@@ -489,36 +479,63 @@ function KanjiChapter() {
                                 HIRAGANA
                             ================================================= */}
 
-                            <div className="flex min-w-0 items-center justify-center px-2 py-4 sm:px-4">
-                              <p className="break-words text-center text-sm font-semibold text-purple-500 sm:text-base">
+                            <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
+                              <p
+                                className={`break-words text-center text-xs font-semibold transition sm:text-sm ${
+                                  isStudied
+                                    ? "text-purple-300"
+                                    : "text-purple-500"
+                                }`}
+                              >
                                 {item.reading}
                               </p>
                             </div>
 
                             {/* =================================================
-                                BURMESE
+                                MEANING
                             ================================================= */}
 
-                            <div className="flex min-w-0 items-center justify-center px-2 py-4 sm:px-4">
-                              <p className="break-words text-center text-sm leading-6 text-gray-600 sm:text-[15px]">
+                            <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
+                              <p
+                                className={`break-words text-center text-[11px] leading-5 transition sm:text-sm ${
+                                  isStudied ? "text-gray-400" : "text-gray-600"
+                                }`}
+                              >
                                 {item.meaning}
                               </p>
                             </div>
 
                             {/* =================================================
-                                STUDIED DOT / CHECK
+                                AUDIO
                             ================================================= */}
 
-                            <div className="flex w-12 items-center justify-center">
+                            <div className="flex items-center justify-center px-1 py-4">
                               <button
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
 
-                                  toggleStudied(
-                                    item.word,
-                                    item.reading,
-                                  );
+                                  speakJapanese(item.reading || item.word);
+                                }}
+                                className="flex items-center justify-center p-1 text-purple-400 transition hover:scale-110 hover:text-purple-600 active:scale-95"
+                                aria-label={`Listen to ${item.word}`}
+                                title="Listen"
+                              >
+                                <Volume2 size={17} />
+                              </button>
+                            </div>
+
+                            {/* =================================================
+                                STATUS
+                            ================================================= */}
+
+                            <div className="flex items-center justify-center px-1 py-4">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+
+                                  toggleStudied(item.word, item.reading);
                                 }}
                                 aria-label={
                                   isStudied
@@ -526,25 +543,18 @@ function KanjiChapter() {
                                     : `Mark ${item.word} as studied`
                                 }
                                 title={
-                                  isStudied
-                                    ? "Studied"
-                                    : "Mark as studied"
+                                  isStudied ? "Studied ✓" : "Tap when studied"
                                 }
-                                className={`flex h-9 w-9 items-center justify-center transition-all duration-200 active:scale-90 ${
-                                  isStudied
-                                    ? "text-pink-400"
-                                    : "text-pink-200 hover:text-pink-400"
-                                }`}
+                                className="flex h-8 w-8 items-center justify-center transition active:scale-90"
                               >
                                 {isStudied ? (
                                   <Check
-                                    size={21}
+                                    size={18}
                                     strokeWidth={3}
+                                    className="text-pink-500"
                                   />
                                 ) : (
-                                  <span className="text-2xl leading-none">
-                                    •
-                                  </span>
+                                  <span className="h-2.5 w-2.5 rounded-full bg-pink-300 transition hover:scale-125 hover:bg-pink-500" />
                                 )}
                               </button>
                             </div>
@@ -553,16 +563,24 @@ function KanjiChapter() {
                       })}
                     </div>
 
-                    {/* Small Hint */}
+                    {/* =================================================
+                        CUTE TIP
+                    ================================================= */}
 
-                    <p className="mt-3 text-center text-[11px] font-medium text-gray-400">
-                      Tap the dot when you finish studying ✨
-                    </p>
+                    <div className="mt-4 flex items-center justify-center gap-2 text-center">
+                      <span className="h-2 w-2 rounded-full bg-pink-300" />
+
+                      <p className="text-[11px] font-medium text-gray-400">
+                        Tap the little dot when you finish studying ✨
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Flip Hint */}
+              {/* =================================================
+                  FLIP HINT
+              ================================================= */}
 
               <p className="mt-6 text-center text-xs font-semibold text-gray-300">
                 Click anywhere on the card to flip back ✨
@@ -573,13 +591,11 @@ function KanjiChapter() {
 
         {/* =====================================================
             JISHO BUTTON
-        ===================================================== */}
+        ====================================================== */}
 
         <button
           type="button"
-          onClick={() =>
-            searchJisho(currentKanji.kanji)
-          }
+          onClick={() => searchJisho(currentKanji.kanji)}
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink-100 px-5 py-4 font-bold text-pink-500 transition hover:bg-pink-200 active:scale-[0.99]"
         >
           <Search size={19} />
@@ -588,20 +604,20 @@ function KanjiChapter() {
 
         {/* =====================================================
             NAVIGATION
-        ===================================================== */}
+        ====================================================== */}
 
         <div className="mt-6 flex items-center justify-between gap-3">
-
           {/* Previous */}
 
           <button
             type="button"
             onClick={previousKanji}
             disabled={currentIndex === 0}
-            className="flex items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-gray-600 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-2 rounded-full bg-white px-4 py-3 font-semibold text-gray-600 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
           >
             <ChevronLeft size={18} />
-            Previous
+
+            <span className="hidden sm:inline">Previous</span>
           </button>
 
           {/* Counter */}
@@ -615,12 +631,11 @@ function KanjiChapter() {
           <button
             type="button"
             onClick={nextKanji}
-            disabled={
-              currentIndex === totalWords - 1
-            }
-            className="flex items-center gap-2 rounded-full bg-pink-500 px-5 py-3 font-semibold text-white transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={currentIndex === totalWords - 1}
+            className="flex items-center gap-2 rounded-full bg-pink-500 px-4 py-3 font-semibold text-white transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
           >
-            Next
+            <span className="hidden sm:inline">Next</span>
+
             <ChevronRight size={18} />
           </button>
         </div>
