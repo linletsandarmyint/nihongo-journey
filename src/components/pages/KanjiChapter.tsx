@@ -16,7 +16,7 @@ import { kanjiVocabulary } from "../../data/kanjiVocabulary";
 import { kanjiChapter2 } from "../../data/kanjiChapter2";
 import { kanjiChapter3 } from "../../data/kanjiChapter3";
 import { kanjiChapter4 } from "../../data/kanjiChapter4";
-
+import { kanjiChapter5 } from "../../data/kanjiChapter5";
 function KanjiChapter() {
   const { chapterId } = useParams();
 
@@ -130,13 +130,15 @@ function KanjiChapter() {
   // =====================================================
 
   const vocabularySource =
-    chapterId === "4"
-      ? kanjiChapter4
-      : chapterId === "3"
-        ? kanjiChapter3
-        : chapterId === "2"
-          ? kanjiChapter2
-          : kanjiVocabulary;
+    chapterId === "5"
+      ? kanjiChapter5
+      : chapterId === "4"
+        ? kanjiChapter4
+        : chapterId === "3"
+          ? kanjiChapter3
+          : chapterId === "2"
+            ? kanjiChapter2
+            : kanjiVocabulary;
 
   const vocabulary =
     vocabularySource.find((item) => item.kanji === currentKanji.kanji)

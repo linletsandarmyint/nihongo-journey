@@ -487,7 +487,7 @@ export const kanjiVocabulary: KanjiVocabulary[] = [
       {
         word: "仮名",
         reading: "かな",
-        meaning: "ကနာ",
+        meaning: "စာလုံး",
       },
       {
         word: "仮定する",
@@ -544,7 +544,7 @@ export const kanjiVocabulary: KanjiVocabulary[] = [
       {
         word: "雑談",
         reading: "ざつだん",
-        meaning: "အပျင်းပြေစကားပြောခြင်း",
+        meaning: "လူအများဖြင့်စကားပြောဆိုခြင်း",
       },
       {
         word: "複雑な",
@@ -554,12 +554,12 @@ export const kanjiVocabulary: KanjiVocabulary[] = [
       {
         word: "雑巾",
         reading: "ぞうきん",
-        meaning: "သန့်ရှင်းရေးအဝတ်",
+        meaning: "သန့်ရှင်းရေးအဝတ်/လက်နှီးဝတ်",
       },
       {
         word: "お雑煮",
         reading: "おぞうに",
-        meaning: "နှစ်သစ်ကူး မိုချီဟင်းရည်",
+        meaning: "နှစ်သစ်ကူးတွင် စားသောဟင်းရည်",
       },
     ],
   },
@@ -652,7 +652,7 @@ export const kanjiVocabulary: KanjiVocabulary[] = [
       {
         word: "人並",
         reading: "ひとなみ",
-        meaning: "သာမန်လူများကဲ့သို့",
+        meaning: "လူရာဝင်ခြင်း ",
       },
       {
         word: "並列",
@@ -673,12 +673,12 @@ export const kanjiVocabulary: KanjiVocabulary[] = [
       {
         word: "のり巻き",
         reading: "のりまき",
-        meaning: "နိုရီမာကီ",
+        meaning: "ရေညှိထမင်းလိပ်",
       },
       {
         word: "右巻き",
         reading: "みぎまき",
-        meaning: "ညာဘက်သို့ လိပ်ခြင်း",
+        meaning: "ညာဘက်သို့ လိပ်ခြင်း/နာရီလက်တံအတိုင်းလည်ခြင်း",
       },
       {
         word: "虎の巻",
@@ -688,7 +688,7 @@ export const kanjiVocabulary: KanjiVocabulary[] = [
       {
         word: "上巻",
         reading: "じょうかん",
-        meaning: "အပေါ်ပိုင်းစာအုပ်",
+        meaning: "ပထမတွဲ",
       },
       {
         word: "全巻",
@@ -709,7 +709,7 @@ export const kanjiVocabulary: KanjiVocabulary[] = [
       {
         word: "著しい",
         reading: "いちじるしい",
-        meaning: "သိသိသာသာဖြစ်သော",
+        meaning: "ထင်ရှားသော",
       },
       {
         word: "著名人",
