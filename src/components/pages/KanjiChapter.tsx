@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Flame,
   Search,
   Settings2,
   Volume2,
@@ -17,6 +18,7 @@ import { kanjiChapter2 } from "../../data/kanjiChapter2";
 import { kanjiChapter3 } from "../../data/kanjiChapter3";
 import { kanjiChapter4 } from "../../data/kanjiChapter4";
 import { kanjiChapter5 } from "../../data/kanjiChapter5";
+
 function KanjiChapter() {
   const { chapterId } = useParams();
 
@@ -43,41 +45,47 @@ function KanjiChapter() {
     hiragana: true,
     meaning: true,
     audio: true,
-    status: true,
+    hard: true,
   });
 
   const [showColumnMenu, setShowColumnMenu] = useState(false);
 
   // =====================================================
-  // Studied Vocabulary
+  // Hard Vocabulary Filter
   // =====================================================
 
-  const [studiedVocabulary, setStudiedVocabulary] = useState<
-    Record<string, boolean>
-  >(() => {
-    try {
-      const saved = localStorage.getItem("nihongo-journey-studied-vocabulary");
-
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [showHardOnly, setShowHardOnly] = useState(false);
 
   // =====================================================
-  // Save Studied Vocabulary
+  // Hard Vocabulary
+  // =====================================================
+
+  const [hardVocabulary, setHardVocabulary] = useState<Record<string, boolean>>(
+    () => {
+      try {
+        const saved = localStorage.getItem("nihongo-journey-hard-vocabulary");
+
+        return saved ? JSON.parse(saved) : {};
+      } catch {
+        return {};
+      }
+    },
+  );
+
+  // =====================================================
+  // Save Hard Vocabulary
   // =====================================================
 
   useEffect(() => {
     try {
       localStorage.setItem(
-        "nihongo-journey-studied-vocabulary",
-        JSON.stringify(studiedVocabulary),
+        "nihongo-journey-hard-vocabulary",
+        JSON.stringify(hardVocabulary),
       );
     } catch {
       // Ignore localStorage errors
     }
-  }, [studiedVocabulary]);
+  }, [hardVocabulary]);
 
   // =====================================================
   // Reset when chapter changes
@@ -87,6 +95,7 @@ function KanjiChapter() {
     setCurrentIndex(0);
     setIsFlipped(false);
     setShowColumnMenu(false);
+    setShowHardOnly(false);
 
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -145,6 +154,18 @@ function KanjiChapter() {
       ?.vocabulary ?? [];
 
   // =====================================================
+  // Filter Vocabulary
+  // =====================================================
+
+  const displayedVocabulary = showHardOnly
+    ? vocabulary.filter((item) => {
+        const vocabularyId = getVocabularyId(item.word, item.reading);
+
+        return hardVocabulary[vocabularyId] === true;
+      })
+    : vocabulary;
+
+  // =====================================================
   // Dynamic Vocabulary Grid
   // =====================================================
 
@@ -153,7 +174,7 @@ function KanjiChapter() {
     visibleColumns.hiragana ? "1fr" : null,
     visibleColumns.meaning ? "1.3fr" : null,
     visibleColumns.audio ? "55px" : null,
-    visibleColumns.status ? "65px" : null,
+    visibleColumns.hard ? "65px" : null,
   ]
     .filter(Boolean)
     .join(" ");
@@ -185,13 +206,13 @@ function KanjiChapter() {
   }
 
   // =====================================================
-  // Toggle Studied
+  // Toggle Hard
   // =====================================================
 
-  function toggleStudied(word: string, reading: string) {
+  function toggleHard(word: string, reading: string) {
     const vocabularyId = getVocabularyId(word, reading);
 
-    setStudiedVocabulary((previous) => ({
+    setHardVocabulary((previous) => ({
       ...previous,
       [vocabularyId]: !previous[vocabularyId],
     }));
@@ -204,6 +225,7 @@ function KanjiChapter() {
   function nextKanji() {
     if (currentIndex < totalWords - 1) {
       setCurrentIndex((previousIndex) => previousIndex + 1);
+
       setIsFlipped(false);
 
       if ("speechSynthesis" in window) {
@@ -215,6 +237,7 @@ function KanjiChapter() {
   function previousKanji() {
     if (currentIndex > 0) {
       setCurrentIndex((previousIndex) => previousIndex - 1);
+
       setIsFlipped(false);
 
       if ("speechSynthesis" in window) {
@@ -350,7 +373,7 @@ function KanjiChapter() {
               <div className="mt-8 space-y-5 text-left">
                 {/* =================================================
                     ONYOMI
-                ================================================= */}
+                ================================================== */}
 
                 <div className="rounded-2xl bg-purple-50 p-4">
                   <p className="text-xs font-bold text-purple-500">ONYOMI</p>
@@ -382,7 +405,7 @@ function KanjiChapter() {
 
                 {/* =================================================
                     KUNYOMI
-                ================================================= */}
+                ================================================== */}
 
                 <div className="rounded-2xl bg-blue-50 p-4">
                   <p className="text-xs font-bold text-blue-500">KUNYOMI</p>
@@ -414,7 +437,7 @@ function KanjiChapter() {
 
                 {/* =================================================
                     BURMESE MEANING
-                ================================================= */}
+                ================================================== */}
 
                 <div className="rounded-2xl bg-pink-50 p-4">
                   <p className="text-xs font-bold text-pink-500">🇲🇲 MEANING</p>
@@ -426,11 +449,13 @@ function KanjiChapter() {
 
                 {/* =================================================
                     VOCABULARY
-                ================================================= */}
+                ================================================== */}
 
                 {vocabulary.length > 0 && (
                   <div className="rounded-3xl bg-gradient-to-br from-pink-50 to-purple-50 p-3 sm:p-5">
-                    {/* Vocabulary Header */}
+                    {/* =================================================
+                        VOCABULARY HEADER
+                    ================================================== */}
 
                     <div className="mb-4 flex items-start justify-between gap-3 px-1">
                       <div className="flex items-center gap-3">
@@ -451,7 +476,7 @@ function KanjiChapter() {
 
                       {/* =================================================
                           COLUMN SETTINGS
-                      ================================================= */}
+                      ================================================== */}
 
                       <div className="relative shrink-0">
                         <button
@@ -472,7 +497,7 @@ function KanjiChapter() {
 
                         {/* =================================================
                             COLUMN MENU
-                        ================================================= */}
+                        ================================================== */}
 
                         {showColumnMenu && (
                           <div
@@ -567,25 +592,25 @@ function KanjiChapter() {
                               Audio
                             </button>
 
-                            {/* STATUS */}
+                            {/* HARD */}
 
                             <button
                               type="button"
-                              onClick={() => toggleColumn("status")}
+                              onClick={() => toggleColumn("hard")}
                               className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
                             >
                               <span
                                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
-                                  visibleColumns.status
+                                  visibleColumns.hard
                                     ? "border-pink-400 bg-pink-400 text-white"
                                     : "border-gray-200 bg-white"
                                 }`}
                               >
-                                {visibleColumns.status && (
+                                {visibleColumns.hard && (
                                   <Check size={11} strokeWidth={3} />
                                 )}
                               </span>
-                              Status
+                              Hard
                             </button>
                           </div>
                         )}
@@ -593,13 +618,45 @@ function KanjiChapter() {
                     </div>
 
                     {/* =================================================
+                        HARD FILTER
+                    ================================================== */}
+
+                    <div
+                      className="mb-4 flex items-center justify-center gap-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setShowHardOnly(false)}
+                        className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+                          !showHardOnly
+                            ? "bg-white text-pink-500 shadow-sm"
+                            : "text-gray-400 hover:bg-white/70 hover:text-pink-400"
+                        }`}
+                      >
+                        All Words
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowHardOnly(true)}
+                        className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition ${
+                          showHardOnly
+                            ? "bg-orange-50 text-orange-500 shadow-sm"
+                            : "text-gray-400 hover:bg-orange-50/70 hover:text-orange-400"
+                        }`}
+                      >
+                        <Flame size={13} />
+                        Hard Words
+                      </button>
+                    </div>
+
+                    {/* =================================================
                         VOCABULARY TABLE
-                    ================================================= */}
+                    ================================================== */}
 
                     <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                      {/* =================================================
-                          HEADER
-                      ================================================= */}
+                      {/* HEADER */}
 
                       <div
                         style={{
@@ -639,27 +696,44 @@ function KanjiChapter() {
                           </div>
                         )}
 
-                        {/* STATUS */}
+                        {/* HARD */}
 
-                        {visibleColumns.status && (
-                          <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-pink-500 sm:px-2 sm:text-xs">
-                            STATUS
+                        {visibleColumns.hard && (
+                          <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-orange-400 sm:px-2 sm:text-xs">
+                            HARD
                           </div>
                         )}
                       </div>
 
                       {/* =================================================
-                          VOCABULARY ROWS
-                      ================================================= */}
+                          NO HARD WORDS
+                      ================================================== */}
 
-                      {vocabulary.map((item, index) => {
+                      {displayedVocabulary.length === 0 && (
+                        <div className="px-5 py-10 text-center">
+                          <div className="text-3xl">🌸</div>
+
+                          <p className="mt-2 text-sm font-bold text-gray-500">
+                            No hard words yet
+                          </p>
+
+                          <p className="mt-1 text-xs text-gray-400">
+                            Mark difficult words with the little flame 🔥
+                          </p>
+                        </div>
+                      )}
+
+                      {/* =================================================
+                          VOCABULARY ROWS
+                      ================================================== */}
+
+                      {displayedVocabulary.map((item, index) => {
                         const vocabularyId = getVocabularyId(
                           item.word,
                           item.reading,
                         );
 
-                        const isStudied =
-                          studiedVocabulary[vocabularyId] === true;
+                        const isHard = hardVocabulary[vocabularyId] === true;
 
                         return (
                           <div
@@ -668,22 +742,20 @@ function KanjiChapter() {
                               gridTemplateColumns: gridColumns,
                             }}
                             className={`grid items-center transition ${
-                              index !== vocabulary.length - 1
+                              index !== displayedVocabulary.length - 1
                                 ? "border-b border-pink-100/80"
                                 : ""
-                            } ${isStudied ? "bg-pink-50/30" : "bg-white"}`}
+                            } ${isHard ? "bg-orange-50/70" : "bg-white"}`}
                           >
                             {/* =================================================
-                                KANJI
-                            ================================================= */}
+                                  KANJI
+                              ================================================== */}
 
                             {visibleColumns.kanji && (
                               <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
                                 <p
                                   className={`break-words text-center text-sm font-extrabold transition sm:text-base ${
-                                    isStudied
-                                      ? "text-gray-400"
-                                      : "text-gray-800"
+                                    isHard ? "text-orange-500" : "text-gray-800"
                                   }`}
                                 >
                                   {item.word}
@@ -692,15 +764,15 @@ function KanjiChapter() {
                             )}
 
                             {/* =================================================
-                                HIRAGANA
-                            ================================================= */}
+                                  HIRAGANA
+                              ================================================== */}
 
                             {visibleColumns.hiragana && (
                               <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
                                 <p
                                   className={`break-words text-center text-xs font-semibold transition sm:text-sm ${
-                                    isStudied
-                                      ? "text-purple-300"
+                                    isHard
+                                      ? "text-orange-400"
                                       : "text-purple-500"
                                   }`}
                                 >
@@ -710,15 +782,15 @@ function KanjiChapter() {
                             )}
 
                             {/* =================================================
-                                MEANING
-                            ================================================= */}
+                                  MEANING
+                              ================================================== */}
 
                             {visibleColumns.meaning && (
                               <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
                                 <p
                                   className={`break-words text-center text-[11px] leading-5 transition sm:text-sm ${
-                                    isStudied
-                                      ? "text-gray-400"
+                                    isHard
+                                      ? "font-semibold text-orange-600"
                                       : "text-gray-600"
                                   }`}
                                 >
@@ -728,8 +800,8 @@ function KanjiChapter() {
                             )}
 
                             {/* =================================================
-                                AUDIO
-                            ================================================= */}
+                                  AUDIO
+                              ================================================== */}
 
                             {visibleColumns.audio && (
                               <div className="flex items-center justify-center px-1 py-4">
@@ -750,36 +822,38 @@ function KanjiChapter() {
                             )}
 
                             {/* =================================================
-                                STATUS
-                            ================================================= */}
+                                  HARD
+                              ================================================== */}
 
-                            {visibleColumns.status && (
+                            {visibleColumns.hard && (
                               <div className="flex items-center justify-center px-1 py-4">
                                 <button
                                   type="button"
                                   onClick={(event) => {
                                     event.stopPropagation();
 
-                                    toggleStudied(item.word, item.reading);
+                                    toggleHard(item.word, item.reading);
                                   }}
                                   aria-label={
-                                    isStudied
-                                      ? `Mark ${item.word} as not studied`
-                                      : `Mark ${item.word} as studied`
+                                    isHard
+                                      ? `Remove ${item.word} from hard words`
+                                      : `Mark ${item.word} as hard`
                                   }
                                   title={
-                                    isStudied ? "Studied ✓" : "Tap when studied"
+                                    isHard
+                                      ? "Remove from hard words"
+                                      : "Mark as hard"
                                   }
                                   className="flex h-8 w-8 items-center justify-center transition active:scale-90"
                                 >
-                                  {isStudied ? (
-                                    <Check
+                                  {isHard ? (
+                                    <Flame
                                       size={18}
-                                      strokeWidth={3}
-                                      className="text-pink-500"
+                                      strokeWidth={2.5}
+                                      className="text-orange-400 transition hover:scale-110 hover:text-orange-500"
                                     />
                                   ) : (
-                                    <span className="h-2.5 w-2.5 rounded-full bg-pink-300 transition hover:scale-125 hover:bg-pink-500" />
+                                    <span className="h-2.5 w-2.5 rounded-full bg-pink-300 transition hover:scale-125 hover:bg-orange-300" />
                                   )}
                                 </button>
                               </div>
@@ -791,13 +865,13 @@ function KanjiChapter() {
 
                     {/* =================================================
                         CUTE TIP
-                    ================================================= */}
+                    ================================================== */}
 
                     <div className="mt-4 flex items-center justify-center gap-2 text-center">
-                      <span className="h-2 w-2 rounded-full bg-pink-300" />
+                      <Flame size={13} className="text-orange-300" />
 
                       <p className="text-[11px] font-medium text-gray-400">
-                        Tap the little dot when you finish studying ✨
+                        Mark words that feel difficult with the little flame ✨
                       </p>
                     </div>
                   </div>
@@ -806,7 +880,7 @@ function KanjiChapter() {
 
               {/* =================================================
                   FLIP HINT
-              ================================================= */}
+              ================================================== */}
 
               <p className="mt-6 text-center text-xs font-semibold text-gray-300">
                 Click anywhere on the card to flip back ✨
