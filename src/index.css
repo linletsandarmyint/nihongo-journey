@@ -59,3 +59,58 @@ html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Edge */
 }
+@keyframes water-wave {
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateX(-6%) rotate(2deg);
+  }
+
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+@keyframes water-wave-reverse {
+  0% {
+    transform: translateX(-4%) rotate(-1deg);
+  }
+
+  50% {
+    transform: translateX(5%) rotate(1deg);
+  }
+
+  100% {
+    transform: translateX(-4%) rotate(-1deg);
+  }
+}
+
+@keyframes bubble {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translateY(-25px);
+    opacity: 0;
+  }
+}
+
+.animate-water-wave {
+  animation: water-wave 4s ease-in-out infinite;
+}
+
+.animate-water-wave-reverse {
+  animation: water-wave-reverse 5s ease-in-out infinite;
+}
+
+.animate-bubble {
+  animation: bubble 3s ease-in-out infinite;
+}
