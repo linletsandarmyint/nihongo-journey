@@ -8,24 +8,34 @@ import Timer from "./components/pages/Timer";
 import StudyDay from "./components/pages/StudyDay";
 import KanjiMaster from "./components/pages/KanjiMaster";
 import KanjiChapter from "./components/pages/KanjiChapter";
+import SupabaseTest from "./SupabaseTest";
+import { AuthProvider } from "./components/context/AuthProvider";
+import SignUp from "./components/auth/SignUp";
+import Login from "./components/auth/Login";
 function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
+    <AuthProvider>
+      <BrowserRouter>
+        <Navbar />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
+        <Routes>
+          <Route path="/" element={<Home />} />
 
-        <Route path="/study-plan" element={<StudyPlan />} />
+          <Route path="/study-plan" element={<StudyPlan />} />
 
-        <Route path="/study-plan/:day" element={<StudyDay />} />
+          <Route path="/study-plan/:day" element={<StudyDay />} />
 
-        <Route path="/progress" element={<Progress />} />
-        <Route path="/kanji-master" element={<KanjiMaster />} />
-        <Route path="/kanji-master/:chapterId" element={<KanjiChapter />} />
-        <Route path="/timer" element={<Timer />} />
-      </Routes>
-    </BrowserRouter>
+          <Route path="/progress" element={<Progress />} />
+          <Route path="/kanji-master" element={<KanjiMaster />} />
+          <Route path="/kanji-master/:chapterId" element={<KanjiChapter />} />
+          <Route path="/timer" element={<Timer />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          {/* Temporary Supabase Test */}
+          <Route path="/supabase-test" element={<SupabaseTest />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
