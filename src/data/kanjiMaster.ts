@@ -428,7 +428,7 @@ export const kanjiMaster: KanjiChapter[] = [
         burmese: "ချွတ်သည် / နှုတ်ထွက်သည်",
       },
       {
-        kanji: "掛け",
+        kanji: "掛",
         onyomi: null,
         kunyomi: "か.かる, か.ける",
         burmese: "ချိတ်ဆွဲသည် / ခင်းသည်",
