@@ -13,6 +13,7 @@ import { AuthProvider } from "./components/context/AuthProvider";
 import SignUp from "./components/auth/SignUp";
 import Login from "./components/auth/Login";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AIAssistant from "./components/ai/AIAssistant";
 function App() {
   return (
     <AuthProvider>
@@ -50,6 +51,7 @@ function App() {
             <Route path="/timer" element={<Timer />} />
           </Route>
         </Routes>
+        <AIAssistant />
       </BrowserRouter>
     </AuthProvider>
   );
