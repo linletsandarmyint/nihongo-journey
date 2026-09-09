@@ -1,10 +1,21 @@
-export type TaskKey = "kanji" | "goi" | "grammar" | "reading" | "listening";
+
+import { supabase } from "../lib/supabase";
+
+export type TaskKey =
+  | "kanji"
+  | "goi"
+  | "grammar"
+  | "reading"
+  | "listening";
 
 export type ProgressData = Record<string, TaskKey[]>;
 
 const STORAGE_KEY = "nihongo-progress";
 
-// Get all progress
+// ============================================================
+// LOCAL STORAGE
+// ============================================================
+
 export function getProgress(): ProgressData {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -15,7 +26,11 @@ export function getProgress(): ProgressData {
 
     const data: unknown = JSON.parse(saved);
 
-    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    if (
+      typeof data !== "object" ||
+      data === null ||
+      Array.isArray(data)
+    ) {
       return {};
     }
 
@@ -38,8 +53,63 @@ export function getCompletedTasks(day: number): TaskKey[] {
   return tasks;
 }
 
-// Save a task
-export function saveProgress(day: number, task: TaskKey): TaskKey[] {
+// ============================================================
+// SUPABASE SYNC
+// ============================================================
+
+async function syncTaskToSupabase(
+  day: number,
+  task: TaskKey,
+  completed: boolean,
+) {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("task_progress")
+      .upsert(
+        {
+          user_id: user.id,
+          day_number: day,
+          task_key: task,
+          completed,
+          completed_at: completed
+            ? new Date().toISOString()
+            : null,
+        },
+        {
+          onConflict: "user_id,day_number,task_key",
+        },
+      );
+
+    if (error) {
+      console.error(
+        "Failed to sync task to Supabase:",
+        error.message,
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Supabase progress sync failed:",
+      error,
+    );
+  }
+}
+
+// ============================================================
+// SAVE TASK
+// ============================================================
+
+export function saveProgress(
+  day: number,
+  task: TaskKey,
+): TaskKey[] {
   const progress = getProgress();
   const dayKey = String(day);
 
@@ -51,13 +121,25 @@ export function saveProgress(day: number, task: TaskKey): TaskKey[] {
     progress[dayKey].push(task);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(progress),
+  );
+
+  // Sync in background
+  void syncTaskToSupabase(day, task, true);
 
   return progress[dayKey];
 }
 
-// Remove a task
-export function removeProgress(day: number, task: TaskKey): TaskKey[] {
+// ============================================================
+// REMOVE TASK
+// ============================================================
+
+export function removeProgress(
+  day: number,
+  task: TaskKey,
+): TaskKey[] {
   const progress = getProgress();
   const dayKey = String(day);
 
@@ -65,15 +147,29 @@ export function removeProgress(day: number, task: TaskKey): TaskKey[] {
     return [];
   }
 
-  progress[dayKey] = progress[dayKey].filter((item) => item !== task);
+  progress[dayKey] = progress[dayKey].filter(
+    (item) => item !== task,
+  );
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(progress),
+  );
+
+  // Sync in background
+  void syncTaskToSupabase(day, task, false);
 
   return progress[dayKey];
 }
 
-// Toggle task
-export function toggleTask(day: number, task: TaskKey): ProgressData {
+// ============================================================
+// TOGGLE TASK
+// ============================================================
+
+export function toggleTask(
+  day: number,
+  task: TaskKey,
+): ProgressData {
   const progress = getProgress();
   const dayKey = String(day);
 
@@ -81,39 +177,205 @@ export function toggleTask(day: number, task: TaskKey): ProgressData {
     progress[dayKey] = [];
   }
 
-  const alreadyCompleted = progress[dayKey].includes(task);
+  const alreadyCompleted =
+    progress[dayKey].includes(task);
 
   if (alreadyCompleted) {
-    progress[dayKey] = progress[dayKey].filter((item) => item !== task);
+    progress[dayKey] = progress[dayKey].filter(
+      (item) => item !== task,
+    );
   } else {
     progress[dayKey].push(task);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(progress),
+  );
+
+  // Sync in background
+  void syncTaskToSupabase(
+    day,
+    task,
+    !alreadyCompleted,
+  );
 
   return progress;
 }
 
-// Toggle task - alternative function name
-export function toggleProgress(day: number, task: TaskKey): TaskKey[] {
+// ============================================================
+// TOGGLE TASK - ALTERNATIVE NAME
+// ============================================================
+
+export function toggleProgress(
+  day: number,
+  task: TaskKey,
+): TaskKey[] {
   const progress = toggleTask(day, task);
 
   return progress[String(day)] ?? [];
 }
 
-// Clear one day's progress
+// ============================================================
+// CLEAR ONE DAY
+// ============================================================
+
 export function clearDayProgress(day: number): void {
   const progress = getProgress();
 
   delete progress[String(day)];
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(progress),
+  );
+
+  void clearDayProgressFromSupabase(day);
 }
 
-// Clear ALL progress
+async function clearDayProgressFromSupabase(
+  day: number,
+) {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("task_progress")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("day_number", day);
+
+    if (error) {
+      console.error(
+        "Failed to clear day progress:",
+        error.message,
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Failed to clear day progress:",
+      error,
+    );
+  }
+}
+
+// ============================================================
+// CLEAR ALL PROGRESS
+// ============================================================
+
 export function clearAllProgress(): void {
   localStorage.removeItem(STORAGE_KEY);
+
+  void clearAllProgressFromSupabase();
 }
+
+async function clearAllProgressFromSupabase() {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("task_progress")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error(
+        "Failed to clear Supabase progress:",
+        error.message,
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Failed to clear Supabase progress:",
+      error,
+    );
+  }
+}
+
+// ============================================================
+// LOAD PROGRESS FROM SUPABASE
+// ============================================================
+
+export async function loadProgressFromSupabase(): Promise<ProgressData> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {};
+    }
+
+    const { data, error } = await supabase
+      .from("task_progress")
+      .select(
+        "day_number, task_key, completed",
+      )
+      .eq("user_id", user.id)
+      .eq("completed", true);
+
+    if (error) {
+      console.error(
+        "Failed to load progress from Supabase:",
+        error.message,
+      );
+
+      return getProgress();
+    }
+
+    const progress: ProgressData = {};
+
+    for (const row of data ?? []) {
+      const dayKey = String(row.day_number);
+
+      if (!progress[dayKey]) {
+        progress[dayKey] = [];
+      }
+
+      if (
+        !progress[dayKey].includes(
+          row.task_key as TaskKey,
+        )
+      ) {
+        progress[dayKey].push(
+          row.task_key as TaskKey,
+        );
+      }
+    }
+
+    // Update local cache
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(progress),
+    );
+
+    return progress;
+  } catch (error) {
+    console.error(
+      "Failed to load Supabase progress:",
+      error,
+    );
+
+    return getProgress();
+  }
+}
+
+// ============================================================
+// GET NEXT INCOMPLETE DAY
+// ============================================================
+
 export function getNextIncompleteDay(
   studyPlan: {
     day: number;
@@ -151,3 +413,4 @@ export function getNextIncompleteDay(
 
   return null;
 }
+

@@ -10,8 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@multiavatar/multiavatar": "^1.0.7",
     "@supabase/supabase-js": "^2.115.0",
     "@tailwindcss/vite": "^4.3.3",
+    "animal-avatar-generator": "^1.2.0",
+    "avatarka": "^4.0.0",
+    "avatarka-react": "^4.0.0",
     "lucide-react": "^1.38.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

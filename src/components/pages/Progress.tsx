@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   Check,
@@ -14,6 +15,7 @@ import { studyPlan } from "../../data/studyPlan";
 import {
   clearAllProgress,
   getCompletedTasks,
+  loadProgressFromSupabase,
   type TaskKey,
 } from "../../utils/progress";
 
@@ -79,9 +81,13 @@ const months = [
 ];
 
 function getTotalTasks(day: (typeof studyPlan)[number]): number {
-  return [day.kanji, day.goi, day.grammar, day.reading, day.listening].filter(
-    Boolean,
-  ).length;
+  return [
+    day.kanji,
+    day.goi,
+    day.grammar,
+    day.reading,
+    day.listening,
+  ].filter(Boolean).length;
 }
 
 function getCompletedTasksForDay(dayNumber: number): number {
@@ -97,7 +103,11 @@ function getCompletedTaskKeys(dayNumber: number): TaskKey[] {
 }
 
 function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
 }
 
 function addDays(date: Date, amount: number): Date {
@@ -115,6 +125,35 @@ function getStudyDate(dayNumber: number): Date {
 }
 
 export default function Progress() {
+  /*
+   * ============================================================
+   * SUPABASE PROGRESS LOADING
+   * ============================================================
+   */
+
+  const [progressVersion, setProgressVersion] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRemoteProgress() {
+      await loadProgressFromSupabase();
+
+      if (!mounted) {
+        return;
+      }
+
+      // Force all progress calculations to run again
+      setProgressVersion((value) => value + 1);
+    }
+
+    void loadRemoteProgress();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const today = useMemo(() => startOfDay(new Date()), []);
 
   /*
@@ -137,9 +176,14 @@ export default function Progress() {
     const firstDay = new Date(year, month, 1);
 
     // Monday = 0
-    const mondayOffset = (firstDay.getDay() + 6) % 7;
+    const mondayOffset =
+      (firstDay.getDay() + 6) % 7;
 
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInMonth = new Date(
+      year,
+      month + 1,
+      0,
+    ).getDate();
 
     const days: Array<{
       day: number | null;
@@ -147,7 +191,11 @@ export default function Progress() {
     }> = [];
 
     // Empty cells before the first day
-    for (let index = 0; index < mondayOffset; index += 1) {
+    for (
+      let index = 0;
+      index < mondayOffset;
+      index += 1
+    ) {
       days.push({
         day: null,
         isToday: false,
@@ -155,7 +203,11 @@ export default function Progress() {
     }
 
     // Actual dates
-    for (let day = 1; day <= daysInMonth; day += 1) {
+    for (
+      let day = 1;
+      day <= daysInMonth;
+      day += 1
+    ) {
       const date = new Date(year, month, day);
 
       days.push({
@@ -178,7 +230,13 @@ export default function Progress() {
   }
 
   function goToToday() {
-    setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setCalendarMonth(
+      new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        1,
+      ),
+    );
   }
 
   /*
@@ -189,22 +247,29 @@ export default function Progress() {
 
   const completedByDay = useMemo(() => {
     return studyPlan.map((day) => {
-      const completedTasks = getCompletedTasksForDay(day.day);
+      const completedTasks =
+        getCompletedTasksForDay(day.day);
 
       const totalTasks = getTotalTasks(day);
 
       const percentage =
-        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        totalTasks > 0
+          ? Math.round(
+              (completedTasks / totalTasks) * 100,
+            )
+          : 0;
 
       return {
         dayNumber: day.day,
         completedTasks,
         totalTasks,
         percentage,
-        isCompleted: totalTasks > 0 && completedTasks === totalTasks,
+        isCompleted:
+          totalTasks > 0 &&
+          completedTasks === totalTasks,
       };
     });
-  }, []);
+  }, [progressVersion]);
 
   /*
    * ============================================================
@@ -216,12 +281,17 @@ export default function Progress() {
 
   const completedTasks = Math.min(
     TOTAL_TASKS,
-    completedByDay.reduce((sum, day) => sum + day.completedTasks, 0),
+    completedByDay.reduce(
+      (sum, day) => sum + day.completedTasks,
+      0,
+    ),
   );
 
   const overallPercentage = Math.min(
     100,
-    Math.round((completedTasks / TOTAL_TASKS) * 100),
+    Math.round(
+      (completedTasks / TOTAL_TASKS) * 100,
+    ),
   );
 
   /*
@@ -230,31 +300,43 @@ export default function Progress() {
    * ============================================================
    */
 
-  const categoryStats = categories.map((category) => {
-    let completed = 0;
-    let total = 0;
+  const categoryStats = categories.map(
+    (category) => {
+      let completed = 0;
+      let total = 0;
 
-    studyPlan.forEach((day) => {
-      if (day[category.key]) {
-        total += 1;
+      studyPlan.forEach((day) => {
+        if (day[category.key]) {
+          total += 1;
 
-        const completedKeys = getCompletedTaskKeys(day.day);
+          const completedKeys =
+            getCompletedTaskKeys(day.day);
 
-        if (completedKeys.includes(category.key)) {
-          completed += 1;
+          if (
+            completedKeys.includes(
+              category.key,
+            )
+          ) {
+            completed += 1;
+          }
         }
-      }
-    });
+      });
 
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const percentage =
+        total > 0
+          ? Math.round(
+              (completed / total) * 100,
+            )
+          : 0;
 
-    return {
-      ...category,
-      completed,
-      total,
-      percentage,
-    };
-  });
+      return {
+        ...category,
+        completed,
+        total,
+        percentage,
+      };
+    },
+  );
 
   /*
    * ============================================================
@@ -262,15 +344,23 @@ export default function Progress() {
    * ============================================================
    */
 
-  const activeStudyDays = completedByDay.filter(
-    (day) => day.completedTasks > 0,
-  ).length;
+  const activeStudyDays =
+    completedByDay.filter(
+      (day) => day.completedTasks > 0,
+    ).length;
 
   const studyStreak = (() => {
     let streak = 0;
 
-    for (let index = 0; index < completedByDay.length; index += 1) {
-      if (completedByDay[index].completedTasks > 0) {
+    for (
+      let index = 0;
+      index < completedByDay.length;
+      index += 1
+    ) {
+      if (
+        completedByDay[index]
+          .completedTasks > 0
+      ) {
         streak += 1;
       } else {
         break;
@@ -280,52 +370,66 @@ export default function Progress() {
     return streak;
   })();
 
-  const hasFirstStep = completedTasks >= 1;
+  const hasFirstStep =
+    completedTasks >= 1;
 
-  const hasStudyStarter = activeStudyDays >= 3;
+  const hasStudyStarter =
+    activeStudyDays >= 3;
 
-  const hasSevenDayStreak = studyStreak >= 7;
+  const hasSevenDayStreak =
+    studyStreak >= 7;
 
-  const hasHalfway = overallPercentage >= 50;
+  const hasHalfway =
+    overallPercentage >= 50;
 
-  const hasPerfectDay = completedByDay.some((day) => day.isCompleted);
+  const hasPerfectDay =
+    completedByDay.some(
+      (day) => day.isCompleted,
+    );
 
-  const hasJourneyComplete = overallPercentage >= 100;
+  const hasJourneyComplete =
+    overallPercentage >= 100;
 
   const achievements = [
     {
       title: "First Step",
-      description: "Complete your first task",
+      description:
+        "Complete your first task",
       icon: "🌱",
       unlocked: hasFirstStep,
     },
     {
       title: "Study Starter",
-      description: "Study for 3 days",
+      description:
+        "Study for 3 days",
       icon: "🌸",
       unlocked: hasStudyStarter,
     },
     {
       title: "7 Day Streak",
-      description: "Keep a 7-day study streak",
+      description:
+        "Keep a 7-day study streak",
       icon: "🔥",
       unlocked: hasSevenDayStreak,
     },
     {
       title: "Halfway There",
-      description: "Reach 50% overall progress",
+      description:
+        "Reach 50% overall progress",
       icon: "⭐",
       unlocked: hasHalfway,
     },
     {
       title: "Perfect Day",
-      description: "Complete every task in one day",
+      description:
+        "Complete every task in one day",
       icon: "✨",
       unlocked: hasPerfectDay,
     },
     {
       title: "Journey Complete",
-      description: "Complete your whole study plan",
+      description:
+        "Complete your whole study plan",
       icon: "🏆",
       unlocked: hasJourneyComplete,
     },
@@ -337,7 +441,8 @@ export default function Progress() {
    * ============================================================
    */
 
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] =
+    useState(false);
 
   function handleReset() {
     clearAllProgress();
@@ -356,16 +461,22 @@ export default function Progress() {
 
         <section>
           <div className="mb-1 flex items-center gap-2">
-            <span className="text-2xl">🫧</span>
+            <span className="text-2xl">
+              🫧
+            </span>
 
             <h1 className="text-2xl font-extrabold text-gray-800 sm:text-3xl">
               Your Progress
             </h1>
-            <span className="text-2xl">🫧</span>
+
+            <span className="text-2xl">
+              🫧
+            </span>
           </div>
 
           <p className="text-sm text-gray-500 sm:text-base">
-            See how far you&apos;ve come on your Nihongo Journey 🌸
+            See how far you&apos;ve come on your
+            Nihongo Journey 🌸
           </p>
         </section>
 
@@ -382,13 +493,16 @@ export default function Progress() {
             {/* TASK COUNT */}
 
             <p className="mt-3 text-sm font-medium text-gray-500">
-              {completedTasks} of {TOTAL_TASKS} tasks completed
+              {completedTasks} of {TOTAL_TASKS}{" "}
+              tasks completed
             </p>
 
             {/* GREAT START */}
 
             <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-pink-50 px-3 py-2">
-              <span className="text-xl leading-none">🌱</span>
+              <span className="text-xl leading-none">
+                🌱
+              </span>
 
               <span className="text-xs font-bold text-gray-600">
                 Great Start!
@@ -430,7 +544,9 @@ export default function Progress() {
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center">
                   <span
                     className={`text-3xl font-extrabold transition-colors duration-500 ${
-                      overallPercentage >= 55 ? "text-white" : "text-pink-500"
+                      overallPercentage >= 55
+                        ? "text-white"
+                        : "text-pink-500"
                     }`}
                   >
                     {overallPercentage}%
@@ -491,42 +607,48 @@ export default function Progress() {
             </h2>
 
             <p className="mt-1 text-sm text-gray-400">
-              Track each part of your Japanese study plan
+              Track each part of your Japanese
+              study plan
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {categoryStats.map((category) => (
-              <div
-                key={category.key}
-                className="rounded-2xl border border-pink-100 bg-[#fffafd] p-4"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-2xl">{category.icon}</span>
+            {categoryStats.map(
+              (category) => (
+                <div
+                  key={category.key}
+                  className="rounded-2xl border border-pink-100 bg-[#fffafd] p-4"
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-2xl">
+                      {category.icon}
+                    </span>
 
-                  <span className="text-sm font-extrabold text-pink-500">
-                    {category.percentage}%
-                  </span>
+                    <span className="text-sm font-extrabold text-pink-500">
+                      {category.percentage}%
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm font-bold text-gray-700">
+                    {category.label}
+                  </h3>
+
+                  <p className="mt-1 text-xs text-gray-400">
+                    {category.completed} /{" "}
+                    {category.total} completed
+                  </p>
+
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-pink-100">
+                    <div
+                      className="h-full rounded-full bg-pink-300 transition-all duration-700"
+                      style={{
+                        width: `${category.percentage}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-
-                <h3 className="text-sm font-bold text-gray-700">
-                  {category.label}
-                </h3>
-
-                <p className="mt-1 text-xs text-gray-400">
-                  {category.completed} / {category.total} completed
-                </p>
-
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-pink-100">
-                  <div
-                    className="h-full rounded-full bg-pink-300 transition-all duration-700"
-                    style={{
-                      width: `${category.percentage}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </section>
 
@@ -541,13 +663,18 @@ export default function Progress() {
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <CalendarDays size={22} className="text-pink-400" />
+                <CalendarDays
+                  size={22}
+                  className="text-pink-400"
+                />
 
                 <h2 className="text-xl font-extrabold text-gray-800">
                   Study Calendar
                 </h2>
 
-                <span className="text-lg">🌸</span>
+                <span className="text-lg">
+                  🌸
+                </span>
               </div>
 
               <p className="mt-1 text-sm text-gray-400">
@@ -560,7 +687,9 @@ export default function Progress() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => changeMonth(-1)}
+                onClick={() =>
+                  changeMonth(-1)
+                }
                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-pink-100 bg-white text-gray-500 transition hover:bg-pink-50 hover:text-pink-500"
                 aria-label="Previous month"
               >
@@ -577,7 +706,9 @@ export default function Progress() {
 
               <button
                 type="button"
-                onClick={() => changeMonth(1)}
+                onClick={() =>
+                  changeMonth(1)
+                }
                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-pink-100 bg-white text-gray-500 transition hover:bg-pink-50 hover:text-pink-500"
                 aria-label="Next month"
               >
@@ -589,13 +720,22 @@ export default function Progress() {
           {/* MONTH TITLE */}
 
           <div className="mb-5 flex items-center justify-center gap-2">
-            <span className="text-sm">🌷</span>
+            <span className="text-sm">
+              🌷
+            </span>
 
             <h3 className="text-lg font-extrabold text-gray-700">
-              {months[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
+              {
+                months[
+                  calendarMonth.getMonth()
+                ]
+              }{" "}
+              {calendarMonth.getFullYear()}
             </h3>
 
-            <span className="text-sm">🌷</span>
+            <span className="text-sm">
+              🌷
+            </span>
           </div>
 
           {/* CALENDAR */}
@@ -604,62 +744,83 @@ export default function Progress() {
             {/* WEEKDAYS */}
 
             <div className="grid grid-cols-7 border-b border-pink-100 bg-pink-50/70">
-              {weekdays.map((weekday) => (
-                <div
-                  key={weekday}
-                  className="py-3 text-center text-[10px] font-extrabold uppercase tracking-wide text-pink-400 sm:text-xs"
-                >
-                  <span className="hidden sm:inline">
-                    {weekday.slice(0, 3)}
-                  </span>
+              {weekdays.map(
+                (weekday) => (
+                  <div
+                    key={weekday}
+                    className="py-3 text-center text-[10px] font-extrabold uppercase tracking-wide text-pink-400 sm:text-xs"
+                  >
+                    <span className="hidden sm:inline">
+                      {weekday.slice(
+                        0,
+                        3,
+                      )}
+                    </span>
 
-                  <span className="sm:hidden">{weekday.slice(0, 1)}</span>
-                </div>
-              ))}
+                    <span className="sm:hidden">
+                      {weekday.slice(
+                        0,
+                        1,
+                      )}
+                    </span>
+                  </div>
+                ),
+              )}
             </div>
 
             {/* DATES */}
 
             <div className="grid grid-cols-7">
-              {calendarDays.map((calendarDay, index) => {
-                if (calendarDay.day === null) {
+              {calendarDays.map(
+                (calendarDay, index) => {
+                  if (
+                    calendarDay.day ===
+                    null
+                  ) {
+                    return (
+                      <div
+                        key={`empty-${index}`}
+                        className="min-h-[72px] border-b border-r border-pink-50 bg-pink-50/10 sm:min-h-[100px]"
+                      />
+                    );
+                  }
+
                   return (
                     <div
-                      key={`empty-${index}`}
-                      className="min-h-[72px] border-b border-r border-pink-50 bg-pink-50/10 sm:min-h-[100px]"
-                    />
-                  );
-                }
-
-                return (
-                  <div
-                    key={calendarDay.day}
-                    className={`relative flex min-h-[72px] items-start justify-center border-b border-r border-pink-50 p-2 sm:min-h-[100px] sm:p-3 ${
-                      calendarDay.isToday ? "bg-pink-50/60" : "bg-white"
-                    }`}
-                  >
-                    {/* DATE CIRCLE */}
-
-                    <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition sm:h-10 sm:w-10 sm:text-base ${
+                      key={
+                        calendarDay.day
+                      }
+                      className={`relative flex min-h-[72px] items-start justify-center border-b border-r border-pink-50 p-2 sm:min-h-[100px] sm:p-3 ${
                         calendarDay.isToday
-                          ? "bg-pink-300 text-white shadow-sm ring-4 ring-pink-100"
-                          : "text-gray-500 hover:bg-pink-50 hover:text-pink-500"
+                          ? "bg-pink-50/60"
+                          : "bg-white"
                       }`}
                     >
-                      {calendarDay.day}
+                      {/* DATE CIRCLE */}
+
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition sm:h-10 sm:w-10 sm:text-base ${
+                          calendarDay.isToday
+                            ? "bg-pink-300 text-white shadow-sm ring-4 ring-pink-100"
+                            : "text-gray-500 hover:bg-pink-50 hover:text-pink-500"
+                        }`}
+                      >
+                        {
+                          calendarDay.day
+                        }
+                      </div>
+
+                      {/* CUTE FLOWER */}
+
+                      {calendarDay.isToday && (
+                        <span className="absolute bottom-2 right-2 text-xs opacity-70">
+                          🌸
+                        </span>
+                      )}
                     </div>
-
-                    {/* CUTE FLOWER */}
-
-                    {calendarDay.isToday && (
-                      <span className="absolute bottom-2 right-2 text-xs opacity-70">
-                        🌸
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
           </div>
 
@@ -668,7 +829,9 @@ export default function Progress() {
           <div className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-gray-300">
             <span>🌸</span>
 
-            <span>New month, new little steps</span>
+            <span>
+              New month, new little steps
+            </span>
 
             <span>🌸</span>
           </div>
@@ -686,72 +849,101 @@ export default function Progress() {
               </h2>
 
               <p className="mt-1 text-sm text-gray-400">
-                Follow your journey one day at a time 🌱
+                Follow your journey one day at
+                a time 🌱
               </p>
             </div>
 
-            <Target size={24} className="text-pink-300" />
+            <Target
+              size={24}
+              className="text-pink-300"
+            />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {completedByDay.map((day) => {
-              const date = getStudyDate(day.dayNumber);
+            {completedByDay.map(
+              (day) => {
+                const date =
+                  getStudyDate(
+                    day.dayNumber,
+                  );
 
-              return (
-                <div
-                  key={day.dayNumber}
-                  className="rounded-2xl border border-pink-100 bg-[#fffafd] p-4"
-                >
-                  <div className="mb-3 flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-pink-400">
-                        DAY {day.dayNumber}
-                      </p>
+                return (
+                  <div
+                    key={
+                      day.dayNumber
+                    }
+                    className="rounded-2xl border border-pink-100 bg-[#fffafd] p-4"
+                  >
+                    <div className="mb-3 flex items-start justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-pink-400">
+                          DAY{" "}
+                          {
+                            day.dayNumber
+                          }
+                        </p>
 
-                      <p className="mt-1 text-xs text-gray-400">
-                        {date.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
+                        <p className="mt-1 text-xs text-gray-400">
+                          {date.toLocaleDateString(
+                            "en-US",
+                            {
+                              month:
+                                "short",
+                              day: "numeric",
+                            },
+                          )}
+                        </p>
+                      </div>
+
+                      {day.isCompleted ? (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-100">
+                          <Check
+                            size={16}
+                            className="text-pink-500"
+                            strokeWidth={
+                              3
+                            }
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                          <span className="h-2 w-2 rounded-full bg-gray-300" />
+                        </div>
+                      )}
                     </div>
 
-                    {day.isCompleted ? (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-100">
-                        <Check
-                          size={16}
-                          className="text-pink-500"
-                          strokeWidth={3}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                        <span className="h-2 w-2 rounded-full bg-gray-300" />
-                      </div>
-                    )}
-                  </div>
+                    <div className="mb-2 flex items-end justify-between">
+                      <span className="text-sm font-bold text-gray-600">
+                        {
+                          day.completedTasks
+                        }{" "}
+                        /{" "}
+                        {
+                          day.totalTasks
+                        }
+                      </span>
 
-                  <div className="mb-2 flex items-end justify-between">
-                    <span className="text-sm font-bold text-gray-600">
-                      {day.completedTasks} / {day.totalTasks}
-                    </span>
+                      <span className="text-xs font-extrabold text-pink-500">
+                        {
+                          day.percentage
+                        }
+                        %
+                      </span>
+                    </div>
 
-                    <span className="text-xs font-extrabold text-pink-500">
-                      {day.percentage}%
-                    </span>
+                    <div className="h-2 overflow-hidden rounded-full bg-pink-100">
+                      <div
+                        className="h-full rounded-full bg-pink-300 transition-all"
+                        style={{
+                          width: `${day.percentage}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-
-                  <div className="h-2 overflow-hidden rounded-full bg-pink-100">
-                    <div
-                      className="h-full rounded-full bg-pink-300 transition-all"
-                      style={{
-                        width: `${day.percentage}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              },
+            )}
           </div>
         </section>
 
@@ -761,7 +953,10 @@ export default function Progress() {
 
         <section className="rounded-3xl border border-pink-100 bg-white p-5 shadow-sm sm:p-7">
           <div className="mb-6 flex items-center gap-2">
-            <Trophy size={22} className="text-yellow-400" />
+            <Trophy
+              size={22}
+              className="text-yellow-400"
+            />
 
             <div>
               <h2 className="text-xl font-extrabold text-gray-800">
@@ -769,52 +964,66 @@ export default function Progress() {
               </h2>
 
               <p className="mt-1 text-sm text-gray-400">
-                Little milestones worth celebrating 🎉
+                Little milestones worth celebrating
+                🎉
               </p>
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {achievements.map((achievement) => (
-              <div
-                key={achievement.title}
-                className={`rounded-2xl border p-4 transition ${
-                  achievement.unlocked
-                    ? "border-pink-100 bg-pink-50/50"
-                    : "border-gray-100 bg-gray-50/50"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl ${
-                      achievement.unlocked
-                        ? "bg-white"
-                        : "bg-gray-100 grayscale"
-                    }`}
-                  >
-                    {achievement.unlocked ? (
-                      achievement.icon
-                    ) : (
-                      <Lock size={18} className="text-gray-300" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3
-                      className={`text-sm font-extrabold ${
-                        achievement.unlocked ? "text-gray-700" : "text-gray-400"
+            {achievements.map(
+              (achievement) => (
+                <div
+                  key={
+                    achievement.title
+                  }
+                  className={`rounded-2xl border p-4 transition ${
+                    achievement.unlocked
+                      ? "border-pink-100 bg-pink-50/50"
+                      : "border-gray-100 bg-gray-50/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl ${
+                        achievement.unlocked
+                          ? "bg-white"
+                          : "bg-gray-100 grayscale"
                       }`}
                     >
-                      {achievement.title}
-                    </h3>
+                      {achievement.unlocked ? (
+                        achievement.icon
+                      ) : (
+                        <Lock
+                          size={18}
+                          className="text-gray-300"
+                        />
+                      )}
+                    </div>
 
-                    <p className="mt-1 text-xs text-gray-400">
-                      {achievement.description}
-                    </p>
+                    <div className="min-w-0">
+                      <h3
+                        className={`text-sm font-extrabold ${
+                          achievement.unlocked
+                            ? "text-gray-700"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        {
+                          achievement.title
+                        }
+                      </h3>
+
+                      <p className="mt-1 text-xs text-gray-400">
+                        {
+                          achievement.description
+                        }
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </section>
 
@@ -830,13 +1039,18 @@ export default function Progress() {
               </h2>
 
               <p className="mt-1 text-xs text-gray-400">
-                Clear all completed tasks and start your journey again.
+                Clear all completed tasks and
+                start your journey again.
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() => setShowResetConfirm(true)}
+              onClick={() =>
+                setShowResetConfirm(
+                  true,
+                )
+              }
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs font-bold text-red-400 transition hover:bg-red-100 hover:text-red-500"
             >
               <RotateCcw size={15} />
@@ -854,7 +1068,10 @@ export default function Progress() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
-              <RotateCcw size={24} className="text-red-400" />
+              <RotateCcw
+                size={24}
+                className="text-red-400"
+              />
             </div>
 
             <div className="mt-4 text-center">
@@ -863,7 +1080,8 @@ export default function Progress() {
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-gray-400">
-                This will remove all completed tasks from your study journey.
+                This will remove all completed
+                tasks from your study journey.
                 This action cannot be undone.
               </p>
             </div>
@@ -871,7 +1089,11 @@ export default function Progress() {
             <div className="mt-6 flex gap-3">
               <button
                 type="button"
-                onClick={() => setShowResetConfirm(false)}
+                onClick={() =>
+                  setShowResetConfirm(
+                    false,
+                  )
+                }
                 className="flex-1 rounded-xl border border-pink-100 bg-white px-4 py-3 text-sm font-bold text-gray-500 transition hover:bg-pink-50"
               >
                 Cancel
@@ -941,3 +1163,4 @@ export default function Progress() {
     </div>
   );
 }
+

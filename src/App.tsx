@@ -12,6 +12,7 @@ import SupabaseTest from "./SupabaseTest";
 import { AuthProvider } from "./components/context/AuthProvider";
 import SignUp from "./components/auth/SignUp";
 import Login from "./components/auth/Login";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 function App() {
   return (
     <AuthProvider>
@@ -19,20 +20,35 @@ function App() {
         <Navbar />
 
         <Routes>
+          {/* ==================== */}
+          {/* PUBLIC ROUTES */}
+          {/* ==================== */}
+
           <Route path="/" element={<Home />} />
 
-          <Route path="/study-plan" element={<StudyPlan />} />
-
-          <Route path="/study-plan/:day" element={<StudyDay />} />
-
-          <Route path="/progress" element={<Progress />} />
-          <Route path="/kanji-master" element={<KanjiMaster />} />
-          <Route path="/kanji-master/:chapterId" element={<KanjiChapter />} />
-          <Route path="/timer" element={<Timer />} />
           <Route path="/login" element={<Login />} />
+
           <Route path="/signup" element={<SignUp />} />
-          {/* Temporary Supabase Test */}
+
           <Route path="/supabase-test" element={<SupabaseTest />} />
+
+          {/* ==================== */}
+          {/* PROTECTED ROUTES */}
+          {/* ==================== */}
+
+          <Route element={<ProtectedRoute />}>
+            <Route path="/study-plan" element={<StudyPlan />} />
+
+            <Route path="/study-plan/:day" element={<StudyDay />} />
+
+            <Route path="/progress" element={<Progress />} />
+
+            <Route path="/kanji-master" element={<KanjiMaster />} />
+
+            <Route path="/kanji-master/:chapterId" element={<KanjiChapter />} />
+
+            <Route path="/timer" element={<Timer />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
