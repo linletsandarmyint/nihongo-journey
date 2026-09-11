@@ -10,16 +10,23 @@ import {
   Home,
   LogOut,
   Menu,
+  
   Sparkles,
   Trophy,
+  UserRound,
   X,
 } from "lucide-react";
 
 import { createAvatar } from "avatarka";
+
 import { useAuth } from "../context/useAuth";
+import { useProfile } from "../context/useProfile";
+import { useTranslation } from "../context/useTranslation";
 
 function Navbar() {
   const { user, signOut } = useAuth();
+  const { profile } = useProfile();
+  const { t } = useTranslation();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,19 +34,18 @@ function Navbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // --------------------------------------------------
-  // USER NAME
-  // --------------------------------------------------
+  /* ========================= */
+  /* USER INFO */
+  /* ========================= */
 
   const displayName =
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.name ||
-    user?.email?.split("@")[0] ||
-    "Learner";
+    profile?.full_name || user?.email?.split("@")[0] || "Learner";
 
-  // --------------------------------------------------
-  // CUTE ANIMAL AVATAR
-  // --------------------------------------------------
+  const email = user?.email || "";
+
+  /* ========================= */
+  /* AVATAR */
+  /* ========================= */
 
   const avatarSeed = user?.id || displayName;
 
@@ -51,47 +57,47 @@ function Navbar() {
       }).svg
     : "";
 
-  const avatarUrl = user
-    ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-        avatarSvg,
-      )}`
+  const generatedAvatarUrl = user
+    ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(avatarSvg)}`
     : "";
 
-  // --------------------------------------------------
-  // NAVIGATION ITEMS
-  // --------------------------------------------------
+  const avatarUrl = profile?.avatar_url || generatedAvatarUrl;
+
+  /* ========================= */
+  /* NAVIGATION */
+  /* ========================= */
 
   const navItems = [
     {
-      name: "Home",
+      name: t.nav.home,
       path: "/",
       icon: Home,
     },
     {
-      name: "Study Plan",
+      name: t.nav.studyPlan,
       path: "/study-plan",
       icon: BookOpen,
     },
     {
-      name: "Kanji Master",
+      name: t.nav.kanjiMaster,
       path: "/kanji-master",
       icon: GraduationCap,
     },
     {
-      name: "Progress",
+      name: t.nav.progress,
       path: "/progress",
       icon: Trophy,
     },
     {
-      name: "Timer",
+      name: t.nav.timer,
       path: "/timer",
       icon: Clock3,
     },
   ];
 
-  // --------------------------------------------------
-  // ACTIVE NAVIGATION
-  // --------------------------------------------------
+  /* ========================= */
+  /* ACTIVE NAV */
+  /* ========================= */
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -99,14 +105,13 @@ function Navbar() {
     }
 
     return (
-      location.pathname === path ||
-      location.pathname.startsWith(`${path}/`)
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
     );
   };
 
-  // --------------------------------------------------
-  // LOGOUT
-  // --------------------------------------------------
+  /* ========================= */
+  /* LOGOUT */
+  /* ========================= */
 
   async function handleLogout() {
     const { error } = await signOut();
@@ -122,26 +127,21 @@ function Navbar() {
     navigate("/login");
   }
 
-  // --------------------------------------------------
-  // MOBILE NAVIGATION
-  // --------------------------------------------------
+  /* ========================= */
+  /* MOBILE NAVIGATION */
+  /* ========================= */
 
   function handleMobileNavigation() {
     setMobileOpen(false);
     setProfileOpen(false);
   }
 
-  // --------------------------------------------------
-  // UI
-  // --------------------------------------------------
-
   return (
     <nav className="sticky top-0 z-50 border-b border-pink-100 bg-white/90 shadow-sm backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-
-        {/* ==================================================
-            LOGO
-        ================================================== */}
+        {/* ================================================== */}
+        {/* LOGO */}
+        {/* ================================================== */}
 
         <Link
           to="/"
@@ -151,17 +151,11 @@ function Navbar() {
           }}
           className="group flex items-center gap-2"
         >
-          {/* Sakura Logo */}
-
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-rose-200 shadow-sm transition-transform duration-200 group-hover:scale-105">
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-rose-200 shadow-sm transition-transform duration-200 group-hover:scale-105">
             <span className="text-xl">🌸</span>
 
-            <span className="absolute -right-1 -top-1 text-xs">
-              ✨
-            </span>
+            <span className="absolute -right-1 -top-1 text-xs">✨</span>
           </div>
-
-          {/* Logo Text */}
 
           <div className="hidden sm:block">
             <div className="text-base font-bold leading-tight text-gray-800">
@@ -174,9 +168,9 @@ function Navbar() {
           </div>
         </Link>
 
-        {/* ==================================================
-            DESKTOP NAVIGATION
-        ================================================== */}
+        {/* ================================================== */}
+        {/* DESKTOP NAVIGATION */}
+        {/* ================================================== */}
 
         <div className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => {
@@ -205,25 +199,20 @@ function Navbar() {
           })}
         </div>
 
-        {/* ==================================================
-            RIGHT SIDE
-        ================================================== */}
+        {/* ================================================== */}
+        {/* RIGHT SIDE */}
+        {/* ================================================== */}
 
         <div className="flex items-center gap-2">
+          <div className="hidden text-sm text-pink-300 lg:block">♡</div>
 
-          <div className="hidden text-sm text-pink-300 lg:block">
-            ♡
-          </div>
-
-          {/* ==================================================
-              LOGGED-IN USER
-          ================================================== */}
+          {/* ================================================== */}
+          {/* LOGGED-IN USER */}
+          {/* ================================================== */}
 
           {user ? (
             <div className="relative">
-
-              {/* Avatar Button */}
-
+              {/* User Button */}
               <button
                 type="button"
                 onClick={() => {
@@ -232,31 +221,27 @@ function Navbar() {
                 }}
                 className="flex items-center gap-2 rounded-2xl border border-pink-100 bg-pink-50/70 px-2 py-1.5 transition-all duration-200 hover:border-pink-200 hover:bg-pink-100"
               >
-
-                {/* Small Avatar */}
-
+                {/* Avatar */}
                 <div className="h-9 w-9 overflow-hidden rounded-full border-2 border-white bg-pink-100 shadow-sm">
                   <img
                     src={avatarUrl}
-                    alt={`${displayName}'s animal avatar`}
+                    alt={`${displayName}'s avatar`}
                     className="h-full w-full object-cover"
                   />
                 </div>
 
-                {/* User Name */}
-
+                {/* Name */}
                 <div className="hidden max-w-28 text-left sm:block">
                   <p className="truncate text-sm font-semibold text-gray-700">
                     {displayName}
                   </p>
 
                   <p className="text-[10px] text-pink-400">
-                    My Journey 🌸
+                    {t.nav.profile} 🌸
                   </p>
                 </div>
 
                 {/* Arrow */}
-
                 <ChevronDown
                   size={16}
                   className={`hidden text-pink-400 transition-transform sm:block ${
@@ -265,93 +250,101 @@ function Navbar() {
                 />
               </button>
 
-              {/* ==================================================
-                  PROFILE DROPDOWN
-              ================================================== */}
+              {/* ================================================== */}
+              {/* PROFILE DROPDOWN */}
+              {/* ================================================== */}
 
               {profileOpen && (
                 <div className="absolute right-0 mt-3 w-72 overflow-hidden rounded-3xl border border-pink-100 bg-white shadow-xl shadow-pink-100/50">
-
-                  {/* Profile Header */}
-
+                  {/* User Header */}
                   <div className="bg-gradient-to-br from-pink-50 via-white to-rose-50 p-5">
                     <div className="flex items-center gap-3">
-
-                      {/* Large Avatar */}
-
-                      <div className="h-14 w-14 overflow-hidden rounded-2xl border-2 border-white bg-pink-100 shadow-md">
+                      {/* Avatar */}
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-white bg-pink-100 shadow-md">
                         <img
                           src={avatarUrl}
-                          alt={`${displayName}'s animal avatar`}
+                          alt={`${displayName}'s avatar`}
                           className="h-full w-full object-cover"
                         />
                       </div>
 
-                      {/* User Information */}
-
+                      {/* User info */}
                       <div className="min-w-0">
                         <p className="truncate font-bold text-gray-800">
                           {displayName}
                         </p>
 
                         <p className="truncate text-xs text-gray-400">
-                          {user.email}
+                          {email}
                         </p>
 
                         <div className="mt-1 flex items-center gap-1 text-[11px] text-pink-400">
                           <Sparkles size={11} />
 
-                          <span>
-                            Keep learning!
-                          </span>
+                          <span>Keep learning!</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* ==================================================
-                      LOGOUT ONLY
-                  ================================================== */}
-
+                  {/* Menu Items */}
                   <div className="p-2">
+                    {/* My Profile */}
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-pink-50"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-100 text-pink-400 transition-colors group-hover:bg-pink-200 group-hover:text-pink-500">
+                        <UserRound size={17} />
+                      </div>
 
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-700">
+                          {t.nav.profile}
+                        </p>
+
+                        <p className="text-[11px] text-gray-400">
+                          View and edit your profile
+                        </p>
+                      </div>
+                    </Link>
+
+                    
+
+                    {/* Divider */}
+                    <div className="my-2 border-t border-pink-100" />
+
+                    {/* Sign Out */}
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-pink-400 transition-colors hover:bg-pink-50 hover:text-pink-500"
+                      className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-pink-50"
                     >
-
-                      {/* Logout Icon */}
-
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-100 text-pink-400">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-100 text-pink-400 transition-colors group-hover:bg-pink-200 group-hover:text-pink-500">
                         <LogOut size={17} />
                       </div>
 
-                      {/* Logout Text */}
-
-                      <div>
-                        <p className="font-semibold">
-                          Log Out
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-pink-500">
+                          {t.nav.logout}
                         </p>
 
                         <p className="text-[11px] text-pink-300">
                           See you next time ♡
                         </p>
                       </div>
-
                     </button>
-
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            /* ==================================================
-               LOGGED-OUT USER
-            ================================================== */
+            /* ================================================== */
+            /* LOGGED-OUT BUTTONS */
+            /* ================================================== */
 
             <div className="hidden items-center gap-2 sm:flex">
-
               <Link
                 to="/login"
                 className="rounded-xl px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-pink-50 hover:text-pink-600"
@@ -365,13 +358,12 @@ function Navbar() {
               >
                 Sign Up
               </Link>
-
             </div>
           )}
 
-          {/* ==================================================
-              MOBILE MENU BUTTON
-          ================================================== */}
+          {/* ================================================== */}
+          {/* MOBILE MENU BUTTON */}
+          {/* ================================================== */}
 
           <button
             type="button"
@@ -382,55 +374,40 @@ function Navbar() {
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-pink-500 transition-colors hover:bg-pink-100 md:hidden"
             aria-label="Toggle navigation menu"
           >
-            {mobileOpen ? (
-              <X size={21} />
-            ) : (
-              <Menu size={21} />
-            )}
+            {mobileOpen ? <X size={21} /> : <Menu size={21} />}
           </button>
         </div>
       </div>
 
-      {/* ==================================================
-          MOBILE MENU
-      ================================================== */}
+      {/* ================================================== */}
+      {/* MOBILE MENU */}
+      {/* ================================================== */}
 
       {mobileOpen && (
         <div className="border-t border-pink-100 bg-white px-4 pb-5 pt-3 shadow-sm md:hidden">
-
-          {/* Mobile User Information */}
-
+          {/* Mobile User */}
           {user && (
             <div className="mb-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-pink-50 to-rose-50 p-3">
-
-              {/* Avatar */}
-
-              <div className="h-11 w-11 overflow-hidden rounded-xl border-2 border-white bg-pink-100 shadow-sm">
+              <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border-2 border-white bg-pink-100 shadow-sm">
                 <img
                   src={avatarUrl}
-                  alt={`${displayName}'s animal avatar`}
+                  alt={`${displayName}'s avatar`}
                   className="h-full w-full object-cover"
                 />
               </div>
-
-              {/* User Info */}
 
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold text-gray-700">
                   {displayName}
                 </p>
 
-                <p className="truncate text-xs text-gray-400">
-                  {user.email}
-                </p>
+                <p className="truncate text-xs text-gray-400">{email}</p>
               </div>
             </div>
           )}
 
-          {/* Mobile Navigation */}
-
+          {/* Navigation */}
           <div className="space-y-1">
-
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -446,28 +423,44 @@ function Navbar() {
                       : "text-gray-600 hover:bg-pink-50 hover:text-pink-500"
                   }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={18} strokeWidth={active ? 2.5 : 2} />
 
                   <span>{item.name}</span>
 
-                  {active && (
-                    <span className="ml-auto text-xs">
-                      🌸
-                    </span>
-                  )}
+                  {active && <span className="ml-auto text-xs">🌸</span>}
                 </Link>
               );
             })}
 
+            {/* Mobile Profile + Settings */}
+            {user && (
+              <>
+                <Link
+                  to="/profile"
+                  onClick={handleMobileNavigation}
+                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${
+                    location.pathname === "/profile"
+                      ? "bg-pink-100 text-pink-600"
+                      : "text-gray-600 hover:bg-pink-50 hover:text-pink-500"
+                  }`}
+                >
+                  <UserRound size={18} />
+
+                  <span>{t.nav.profile}</span>
+
+                  {location.pathname === "/profile" && (
+                    <span className="ml-auto text-xs">🌸</span>
+                  )}
+                </Link>
+
+                
+              </>
+            )}
           </div>
 
-          {/* ==================================================
-              MOBILE LOGIN / SIGNUP / LOGOUT
-          ================================================== */}
-
+          {/* Mobile Auth */}
           {!user ? (
             <div className="mt-3 grid grid-cols-2 gap-2">
-
               <Link
                 to="/login"
                 onClick={handleMobileNavigation}
@@ -483,7 +476,6 @@ function Navbar() {
               >
                 Sign Up
               </Link>
-
             </div>
           ) : (
             <button
@@ -492,13 +484,11 @@ function Navbar() {
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-pink-50 py-2.5 text-sm font-semibold text-pink-400 transition-colors hover:bg-pink-100 hover:text-pink-500"
             >
               <LogOut size={17} />
-
-              Log Out
+              {t.nav.logout}
             </button>
           )}
 
-          {/* Cute Footer */}
-
+          {/* Footer */}
           <div className="mt-4 text-center text-xs text-pink-300">
             がんばってね！ 🌸✨
           </div>
@@ -509,4 +499,3 @@ function Navbar() {
 }
 
 export default Navbar;
-
