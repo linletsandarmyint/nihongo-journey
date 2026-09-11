@@ -50,7 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   async function signUp(email: string, password: string) {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = "https://nihongo-journey-n2.vercel.app/email-confirmed";
 
     const { error } = await supabase.auth.signUp({
       email,
