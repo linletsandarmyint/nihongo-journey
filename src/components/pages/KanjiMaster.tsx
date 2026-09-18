@@ -10,6 +10,8 @@ import {
   Sparkles,
   Volume2,
   X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import { kanjiMaster } from "../../data/kanjiMaster";
@@ -38,6 +40,15 @@ function KanjiMaster() {
   >(null);
 
   // =====================================================
+  // Kanji Display Customization
+  // =====================================================
+
+  const [showKanji, setShowKanji] = useState(false);
+  const [showOnyomi, setShowOnyomi] = useState(false);
+  const [showKunyomi, setShowKunyomi] = useState(false);
+  const [showBurmese, setShowBurmese] = useState(true);
+
+  // =====================================================
   // Open Modal
   // =====================================================
 
@@ -49,6 +60,12 @@ function KanjiMaster() {
     event.stopPropagation();
 
     setSelectedChapter(chapterData);
+
+    // Reset customization whenever a new chapter opens
+    setShowKanji(false);
+    setShowOnyomi(false);
+    setShowKunyomi(false);
+    setShowBurmese(true);
   }
 
   // =====================================================
@@ -127,6 +144,40 @@ function KanjiMaster() {
     setSelectedChapterFilter("all");
   }
 
+  // =====================================================
+  // Toggle Button Component
+  // =====================================================
+
+  function DisplayToggle({
+    label,
+    icon,
+    enabled,
+    onClick,
+  }: {
+    label: string;
+    icon: React.ReactNode;
+    enabled: boolean;
+    onClick: () => void;
+  }) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition duration-200 sm:text-sm ${
+          enabled
+            ? "border-pink-200 bg-pink-50 text-pink-500 shadow-sm"
+            : "border-gray-100 bg-gray-50 text-gray-400 hover:border-pink-100 hover:bg-pink-50/50 hover:text-pink-400"
+        }`}
+      >
+        <span>{icon}</span>
+
+        <span>{label}</span>
+
+        {enabled ? <Eye size={14} /> : <EyeOff size={14} />}
+      </button>
+    );
+  }
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-pink-50 px-4 py-6 sm:px-5 sm:py-8 md:px-8">
       <div className="mx-auto max-w-6xl">
@@ -135,7 +186,6 @@ function KanjiMaster() {
         ===================================================== */}
 
         <section className="relative mb-8 overflow-hidden rounded-[2rem] bg-white shadow-sm sm:mb-10 sm:rounded-[2.5rem]">
-          {/* Decorative Background */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-pink-100/70 blur-2xl sm:h-64 sm:w-64" />
 
@@ -155,15 +205,12 @@ function KanjiMaster() {
           </div>
 
           <div className="relative grid gap-8 p-6 sm:p-8 md:grid-cols-[1fr_auto] md:items-center md:p-10 lg:p-12">
-            {/* Hero Content */}
             <div>
-              {/* Badge */}
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-pink-100 px-3.5 py-2 text-xs font-bold text-pink-500 shadow-sm sm:px-4 sm:text-sm">
                 <Sparkles size={15} />
                 <span>Nihongo Journey</span>
               </div>
 
-              {/* Heading */}
               <h1 className="font-heading max-w-2xl text-3xl font-extrabold leading-tight tracking-tight text-gray-800 sm:text-4xl md:text-5xl lg:text-[3.25rem]">
                 Kanji Master{" "}
                 <span className="inline-block motion-safe:animate-pulse">
@@ -171,14 +218,12 @@ function KanjiMaster() {
                 </span>
               </h1>
 
-              {/* Description */}
               <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-500 sm:text-base sm:leading-7">
                 Build your Japanese Kanji skills, one chapter at a time. Learn
                 the readings, meanings, and sounds along your Nihongo journey.
                 🌸
               </p>
 
-              {/* Feature Pills */}
               <div className="mt-6 flex flex-wrap gap-2">
                 <div className="inline-flex items-center gap-2 rounded-full border border-pink-100 bg-pink-50 px-3 py-2 text-xs font-bold text-pink-500 sm:text-sm">
                   <Layers size={14} />
@@ -196,19 +241,15 @@ function KanjiMaster() {
                 </div>
               </div>
 
-              {/* Small Encouragement */}
               <div className="mt-6 flex items-center gap-2 text-xs font-semibold text-gray-400 sm:text-sm">
                 <CheckCircle2 size={16} className="text-green-400" />
                 Learn at your own pace ✨
               </div>
             </div>
 
-            {/* Hero Visual */}
             <div className="relative mx-auto flex h-44 w-44 items-center justify-center sm:h-52 sm:w-52 md:mx-0 md:h-56 md:w-56">
-              {/* Outer Glow */}
               <div className="absolute inset-5 rounded-full bg-pink-100/80 blur-2xl" />
 
-              {/* Decorative Flowers */}
               <span className="absolute left-1 top-8 text-xl text-pink-300 motion-safe:animate-bounce sm:text-2xl">
                 🌸
               </span>
@@ -221,7 +262,6 @@ function KanjiMaster() {
                 ✦
               </span>
 
-              {/* Main Kanji Card */}
               <div className="relative flex h-36 w-36 rotate-2 flex-col items-center justify-center rounded-[2rem] border border-pink-100 bg-gradient-to-br from-pink-50 via-white to-purple-50 shadow-lg transition duration-500 hover:rotate-0 hover:scale-105 sm:h-44 sm:w-44">
                 <span className="text-6xl font-bold leading-none text-gray-800 sm:text-7xl">
                   漢
@@ -235,18 +275,12 @@ function KanjiMaster() {
           </div>
         </section>
 
-
         {/* =====================================================
             SEARCH
         ===================================================== */}
 
         <section className="mb-8 rounded-[1.75rem] bg-white p-4 shadow-sm sm:mb-10 sm:rounded-[2rem] sm:p-5 md:p-6">
-          <div className="mb-4">
-            <div className="flex items-center gap-2"></div>
-          </div>
-
           <div className="flex flex-col gap-3 md:flex-row">
-            {/* Search Input */}
             <div className="relative min-w-0 flex-1">
               <Search
                 size={19}
@@ -273,7 +307,6 @@ function KanjiMaster() {
               )}
             </div>
 
-            {/* Chapter Filter */}
             <div className="w-full md:w-56">
               <select
                 value={selectedChapterFilter}
@@ -293,7 +326,6 @@ function KanjiMaster() {
             </div>
           </div>
 
-          {/* Search Information */}
           {isSearching && (
             <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-gray-500">
@@ -345,12 +377,10 @@ function KanjiMaster() {
                   >
                     <article className="h-full rounded-[1.75rem] bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg active:scale-[0.99] sm:p-5">
                       <div className="flex items-start justify-between gap-3">
-                        {/* Kanji */}
                         <div className="flex h-18 w-18 shrink-0 items-center justify-center rounded-2xl bg-pink-50 text-4xl font-bold text-gray-800 transition duration-300 group-hover:scale-105 group-hover:bg-pink-100 sm:h-20 sm:w-20 sm:text-5xl">
                           {result.kanji}
                         </div>
 
-                        {/* Chapter */}
                         <div className="text-right">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300">
                             Chapter
@@ -362,12 +392,10 @@ function KanjiMaster() {
                         </div>
                       </div>
 
-                      {/* Chapter Name */}
                       <p className="mt-3 line-clamp-1 text-xs font-semibold text-gray-400">
                         {result.chapterName}
                       </p>
 
-                      {/* Readings */}
                       <div className="mt-3 space-y-2">
                         {result.onyomi && (
                           <div className="rounded-xl bg-purple-50 px-3 py-2">
@@ -406,7 +434,6 @@ function KanjiMaster() {
                         )}
                       </div>
 
-                      {/* Open Chapter */}
                       <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
                         <span className="text-sm font-bold text-pink-500">
                           Open Chapter
@@ -475,8 +502,6 @@ function KanjiMaster() {
               const chapterNumber = index + 1;
               const kanjiCount = chapterData.kanji_list.length;
 
-              
-
               return (
                 <Link
                   key={chapterData.chapter}
@@ -484,15 +509,12 @@ function KanjiMaster() {
                   className="group block"
                 >
                   <article className="h-full rounded-[1.75rem] bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg active:scale-[0.99] sm:rounded-[2rem] sm:p-6">
-                    {/* Card Header */}
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
-                        {/* Chapter Number */}
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pink-100 text-lg font-extrabold text-pink-500 transition duration-300 group-hover:scale-105 group-hover:rotate-2 sm:h-14 sm:w-14 sm:text-xl">
                           {String(chapterNumber).padStart(2, "0")}
                         </div>
 
-                        {/* Chapter Label */}
                         <div className="min-w-0">
                           <p className="text-[10px] font-bold tracking-wider text-gray-400 sm:text-xs">
                             CHAPTER
@@ -504,7 +526,6 @@ function KanjiMaster() {
                         </div>
                       </div>
 
-                      {/* Arrow */}
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 transition duration-300 group-hover:translate-x-1 group-hover:bg-pink-100">
                         <ArrowRight
                           size={18}
@@ -513,14 +534,11 @@ function KanjiMaster() {
                       </div>
                     </div>
 
-                    {/* Chapter Title */}
                     <p className="mt-5 min-h-[48px] font-semibold leading-6 text-gray-700">
                       {chapterData.chapter}
                     </p>
 
-                    {/* Kanji Preview */}
                     <div className="mt-4 rounded-2xl bg-purple-50 p-3.5 sm:p-4">
-                      {/* Preview Header */}
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[10px] font-bold tracking-wider text-purple-500 sm:text-xs">
                           KANJI PREVIEW
@@ -531,7 +549,6 @@ function KanjiMaster() {
                         </span>
                       </div>
 
-                      {/* First 4 Kanji */}
                       <div className="mt-3 grid grid-cols-4 gap-2">
                         {chapterData.kanji_list
                           .slice(0, 4)
@@ -545,10 +562,11 @@ function KanjiMaster() {
                           ))}
                       </div>
 
-                      {/* View All Button */}
                       <button
                         type="button"
-                        onClick={(event) => openKanjiModal(event, chapterData)}
+                        onClick={(event) =>
+                          openKanjiModal(event, chapterData)
+                        }
                         className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-purple-500 transition duration-200 hover:bg-white hover:text-pink-500 active:scale-[0.98] sm:text-sm"
                       >
                         ✨ View all {kanjiCount} Kanji
@@ -556,7 +574,6 @@ function KanjiMaster() {
                       </button>
                     </div>
 
-                    {/* Kanji Count */}
                     <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-gray-400">
                       <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-pink-50 text-xs">
                         🈷️
@@ -564,7 +581,6 @@ function KanjiMaster() {
                       {kanjiCount} Kanji
                     </div>
 
-                    {/* Card Footer */}
                     <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
                       <span className="text-sm font-bold text-pink-500">
                         Open Chapter
@@ -591,15 +607,16 @@ function KanjiMaster() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-3 backdrop-blur-sm sm:p-4"
           onClick={closeKanjiModal}
         >
-          {/* Modal Container */}
           <div
-            className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-[2rem]"
+            className="relative flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-[2rem]"
             onClick={(event) => event.stopPropagation()}
           >
-            {/* Modal Header */}
+            {/* =====================================================
+                MODAL HEADER
+            ===================================================== */}
+
             <div className="shrink-0 border-b border-gray-100 bg-gradient-to-r from-pink-50 to-purple-50 px-4 py-4 sm:px-6 sm:py-5 md:px-8">
               <div className="flex items-start justify-between gap-3">
-                {/* Header Text */}
                 <div className="min-w-0">
                   <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-[10px] font-bold text-pink-500 shadow-sm sm:px-3 sm:text-xs">
                     <Sparkles size={12} />
@@ -615,7 +632,6 @@ function KanjiMaster() {
                   </p>
                 </div>
 
-                {/* Close Button */}
                 <button
                   type="button"
                   onClick={closeKanjiModal}
@@ -627,15 +643,110 @@ function KanjiMaster() {
               </div>
             </div>
 
-            {/* Kanji Grid */}
+            {/* =====================================================
+                DISPLAY CUSTOMIZATION
+            ===================================================== */}
+
+            <div className="shrink-0 border-b border-gray-100 bg-white px-4 py-4 sm:px-6 md:px-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 sm:text-base">
+                    Customize your view ✨
+                  </h3>
+
+                  <p className="mt-1 text-xs text-gray-400">
+                    Choose what you want to see in each Kanji card.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <DisplayToggle
+                    label="Burmese"
+                    icon="🇲🇲"
+                    enabled={showBurmese}
+                    onClick={() => setShowBurmese((value) => !value)}
+                  />
+
+                  <DisplayToggle
+                    label="Kanji"
+                    icon="🈷️"
+                    enabled={showKanji}
+                    onClick={() => setShowKanji((value) => !value)}
+                  />
+
+                  <DisplayToggle
+                    label="Onyomi"
+                    icon="音"
+                    enabled={showOnyomi}
+                    onClick={() => setShowOnyomi((value) => !value)}
+                  />
+
+                  <DisplayToggle
+                    label="Kunyomi"
+                    icon="訓"
+                    enabled={showKunyomi}
+                    onClick={() => setShowKunyomi((value) => !value)}
+                  />
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBurmese(true);
+                    setShowKanji(false);
+                    setShowOnyomi(false);
+                    setShowKunyomi(false);
+                  }}
+                  className="rounded-full bg-pink-50 px-3 py-1.5 text-[11px] font-bold text-pink-500 transition hover:bg-pink-100"
+                >
+                  🇲🇲 Burmese only
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBurmese(true);
+                    setShowKanji(true);
+                    setShowOnyomi(true);
+                    setShowKunyomi(true);
+                  }}
+                  className="rounded-full bg-purple-50 px-3 py-1.5 text-[11px] font-bold text-purple-500 transition hover:bg-purple-100"
+                >
+                  ✨ Show all
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBurmese(false);
+                    setShowKanji(true);
+                    setShowOnyomi(false);
+                    setShowKunyomi(false);
+                  }}
+                  className="rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-blue-500 transition hover:bg-blue-100"
+                >
+                  🈷️ Kanji only
+                </button>
+              </div>
+            </div>
+
+            {/* =====================================================
+                KANJI GRID
+            ===================================================== */}
+
             <div className="kanji-modal-scroll overflow-y-auto px-3 py-4 sm:px-5 sm:py-6 md:px-8">
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5">
                 {selectedChapter.kanji_list.map((item, index) => (
                   <div
                     key={`${item.kanji}-${index}`}
-                    className="group rounded-xl border border-gray-100 bg-gray-50 p-2.5 text-center transition duration-300 hover:-translate-y-1 hover:border-pink-200 hover:bg-pink-50 hover:shadow-sm sm:rounded-2xl sm:p-3"
+                    className="group rounded-xl border border-gray-100 bg-gray-50 p-2.5 transition duration-300 hover:-translate-y-1 hover:border-pink-200 hover:bg-pink-50 hover:shadow-sm sm:rounded-2xl sm:p-3"
                   >
                     {/* Number */}
+
                     <div className="mb-1.5 flex items-center justify-between sm:mb-2">
                       <span className="text-[9px] font-bold text-gray-300 sm:text-[11px]">
                         #{String(index + 1).padStart(2, "0")}
@@ -646,33 +757,80 @@ function KanjiMaster() {
                       </span>
                     </div>
 
-                    {/* Kanji */}
-                    <div className="flex h-14 items-center justify-center rounded-xl bg-white shadow-sm sm:h-16">
-                      <span className="text-3xl font-bold text-gray-800 sm:text-4xl">
-                        {item.kanji}
-                      </span>
-                    </div>
+                    {/* =================================================
+                        KANJI
+                    ================================================= */}
 
-                    {/* Onyomi */}
-                    {item.onyomi && (
-                      <p className="mt-1.5 truncate text-[10px] text-purple-500 sm:mt-2 sm:text-xs">
-                        <span className="font-bold">音</span> {item.onyomi}
-                      </p>
+                    {showKanji && (
+                      <div className="flex h-14 items-center justify-center rounded-xl bg-white shadow-sm sm:h-16">
+                        <span className="text-3xl font-bold text-gray-800 sm:text-4xl">
+                          {item.kanji}
+                        </span>
+                      </div>
                     )}
 
-                    {/* Kunyomi */}
-                    {item.kunyomi && (
-                      <p className="mt-1 truncate text-[10px] text-blue-500 sm:text-xs">
-                        <span className="font-bold">訓</span> {item.kunyomi}
-                      </p>
+                    {/* =================================================
+                        ONYOMI
+                    ================================================= */}
+
+                    {showOnyomi && item.onyomi && (
+                      <div className="mt-2 rounded-lg bg-purple-50 px-2 py-1.5">
+                        <p className="text-[9px] font-bold text-purple-400 sm:text-[10px]">
+                          音 ONYOMI
+                        </p>
+
+                        <p className="mt-0.5 truncate text-[10px] font-semibold text-gray-700 sm:text-xs">
+                          {item.onyomi}
+                        </p>
+                      </div>
                     )}
 
-                    {/* Burmese Meaning */}
-                    {item.burmese && (
-                      <p className="mt-1.5 line-clamp-2 text-[10px] font-medium leading-4 text-gray-500 sm:mt-2 sm:text-xs">
-                        {item.burmese}
-                      </p>
+                    {/* =================================================
+                        KUNYOMI
+                    ================================================= */}
+
+                    {showKunyomi && item.kunyomi && (
+                      <div className="mt-2 rounded-lg bg-blue-50 px-2 py-1.5">
+                        <p className="text-[9px] font-bold text-blue-400 sm:text-[10px]">
+                          訓 KUNYOMI
+                        </p>
+
+                        <p className="mt-0.5 truncate text-[10px] font-semibold text-gray-700 sm:text-xs">
+                          {item.kunyomi}
+                        </p>
+                      </div>
                     )}
+
+                    {/* =================================================
+                        BURMESE
+                    ================================================= */}
+
+                    {showBurmese && item.burmese && (
+                      <div className="mt-2 rounded-lg bg-pink-50 px-2 py-1.5">
+                        <p className="text-[9px] font-bold text-pink-400 sm:text-[10px]">
+                          🇲🇲 MEANING
+                        </p>
+
+                        <p className="mt-0.5 line-clamp-3 text-[10px] font-medium leading-4 text-gray-600 sm:text-xs">
+                          {item.burmese}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* =================================================
+                        EMPTY STATE
+                    ================================================= */}
+
+                    {!showKanji &&
+                      !showOnyomi &&
+                      !showKunyomi &&
+                      !showBurmese && (
+                        <div className="flex min-h-16 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white px-2 text-center">
+                          <p className="text-[10px] font-medium text-gray-400">
+                            Select something to display ✨
+                          </p>
+                        </div>
+                      )}
                   </div>
                 ))}
               </div>
