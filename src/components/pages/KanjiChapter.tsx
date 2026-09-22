@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import {
@@ -6,9 +6,13 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
   Flame,
+  RotateCcw,
   Search,
   Settings2,
+  Trash2,
   Volume2,
 } from "lucide-react";
 
@@ -18,6 +22,21 @@ import { kanjiChapter2 } from "../../data/kanjiChapter2";
 import { kanjiChapter3 } from "../../data/kanjiChapter3";
 import { kanjiChapter4 } from "../../data/kanjiChapter4";
 import { kanjiChapter5 } from "../../data/kanjiChapter5";
+
+type Point = {
+  x: number;
+  y: number;
+};
+
+type Stroke = Point[];
+
+type VisibleColumns = {
+  kanji: boolean;
+  hiragana: boolean;
+  meaning: boolean;
+  audio: boolean;
+  hard: boolean;
+};
 
 function KanjiChapter() {
   const { chapterId } = useParams();
@@ -37,10 +56,23 @@ function KanjiChapter() {
   const [isFlipped, setIsFlipped] = useState(false);
 
   // =====================================================
+  // Drawing Practice State
+  // =====================================================
+
+  const [isPracticing, setIsPracticing] = useState(false);
+  const [showPracticeGuide, setShowPracticeGuide] = useState(true);
+  const [penSize, setPenSize] = useState(5);
+  const [drawingStrokes, setDrawingStrokes] = useState<Stroke[]>([]);
+
+  const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const currentStrokeRef = useRef<Stroke>([]);
+  const isDrawingRef = useRef(false);
+
+  // =====================================================
   // Vocabulary Column Visibility
   // =====================================================
 
-  const [visibleColumns, setVisibleColumns] = useState({
+  const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>({
     kanji: true,
     hiragana: true,
     meaning: true,
@@ -94,6 +126,9 @@ function KanjiChapter() {
   useEffect(() => {
     setCurrentIndex(0);
     setIsFlipped(false);
+    setIsPracticing(false);
+    setShowPracticeGuide(true);
+    setDrawingStrokes([]);
     setShowColumnMenu(false);
     setShowHardOnly(false);
 
@@ -154,6 +189,14 @@ function KanjiChapter() {
       ?.vocabulary ?? [];
 
   // =====================================================
+  // Vocabulary ID
+  // =====================================================
+
+  function getVocabularyId(word: string, reading: string) {
+    return `${word}__${reading}`;
+  }
+
+  // =====================================================
   // Filter Vocabulary
   // =====================================================
 
@@ -180,21 +223,12 @@ function KanjiChapter() {
     .join(" ");
 
   // =====================================================
-  // Vocabulary ID
-  // =====================================================
-
-  function getVocabularyId(word: string, reading: string) {
-    return `${word}__${reading}`;
-  }
-
-  // =====================================================
   // Toggle Vocabulary Column
   // =====================================================
 
-  function toggleColumn(column: keyof typeof visibleColumns) {
+  function toggleColumn(column: keyof VisibleColumns) {
     const visibleCount = Object.values(visibleColumns).filter(Boolean).length;
 
-    // Don't allow all columns to be hidden
     if (visibleColumns[column] && visibleCount === 1) {
       return;
     }
@@ -216,34 +250,6 @@ function KanjiChapter() {
       ...previous,
       [vocabularyId]: !previous[vocabularyId],
     }));
-  }
-
-  // =====================================================
-  // Navigation
-  // =====================================================
-
-  function nextKanji() {
-    if (currentIndex < totalWords - 1) {
-      setCurrentIndex((previousIndex) => previousIndex + 1);
-
-      setIsFlipped(false);
-
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    }
-  }
-
-  function previousKanji() {
-    if (currentIndex > 0) {
-      setCurrentIndex((previousIndex) => previousIndex - 1);
-
-      setIsFlipped(false);
-
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    }
   }
 
   // =====================================================
@@ -291,6 +297,383 @@ function KanjiChapter() {
   }
 
   // =====================================================
+  // Drawing - Get Canvas Point
+  // =====================================================
+
+  function getCanvasPoint(event: React.PointerEvent<HTMLCanvasElement>): Point {
+    const canvas = drawingCanvasRef.current;
+
+    if (!canvas) {
+      return {
+        x: 0,
+        y: 0,
+      };
+    }
+
+    const rect = canvas.getBoundingClientRect();
+
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  }
+
+  // =====================================================
+  // Drawing - Render Canvas
+  // =====================================================
+
+  function renderDrawingCanvas() {
+    const canvas = drawingCanvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return;
+    }
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+
+    if (!width || !height) {
+      return;
+    }
+
+    context.clearRect(0, 0, width, height);
+
+    // ---------------------------------------------
+    // Background
+    // ---------------------------------------------
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+
+    // ---------------------------------------------
+    // Practice Grid
+    // ---------------------------------------------
+
+    context.save();
+
+    context.strokeStyle = "rgba(244, 114, 182, 0.10)";
+    context.lineWidth = 1;
+
+    // Vertical
+    context.beginPath();
+    context.moveTo(width / 2, 0);
+    context.lineTo(width / 2, height);
+    context.stroke();
+
+    // Horizontal
+    context.beginPath();
+    context.moveTo(0, height / 2);
+    context.lineTo(width, height / 2);
+    context.stroke();
+
+    // Diagonal
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(width, height);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(width, 0);
+    context.lineTo(0, height);
+    context.stroke();
+
+    context.restore();
+
+    // ---------------------------------------------
+    // Kanji Guide
+    // ---------------------------------------------
+
+    if (showPracticeGuide) {
+      context.save();
+
+      const fontSize = Math.min(width, height) * 0.68;
+
+      context.font = `bold ${fontSize}px "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif`;
+
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+
+      context.fillStyle = "rgba(236, 72, 153, 0.10)";
+
+      context.fillText(currentKanji.kanji, width / 2, height / 2 + 5);
+
+      context.restore();
+    }
+
+    // ---------------------------------------------
+    // User Drawing
+    // ---------------------------------------------
+
+    context.save();
+
+    context.strokeStyle = "#ec4899";
+    context.lineWidth = penSize;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+
+    drawingStrokes.forEach((stroke) => {
+      if (stroke.length === 0) {
+        return;
+      }
+
+      context.beginPath();
+
+      context.moveTo(stroke[0].x, stroke[0].y);
+
+      for (let index = 1; index < stroke.length; index += 1) {
+        context.lineTo(stroke[index].x, stroke[index].y);
+      }
+
+      context.stroke();
+    });
+
+    context.restore();
+  }
+
+  // =====================================================
+  // Redraw Drawing Canvas
+  // =====================================================
+
+  useEffect(() => {
+    if (!isPracticing) {
+      return;
+    }
+
+    const canvas = drawingCanvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    const setupCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+
+      const dpr = window.devicePixelRatio || 1;
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        return;
+      }
+
+      context.scale(dpr, dpr);
+
+      renderDrawingCanvas();
+    };
+
+    setupCanvas();
+
+    window.addEventListener("resize", setupCanvas);
+
+    return () => {
+      window.removeEventListener("resize", setupCanvas);
+    };
+  }, [isPracticing, currentIndex, showPracticeGuide, drawingStrokes, penSize]);
+
+  // =====================================================
+  // Start Drawing
+  // =====================================================
+
+  function handlePointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const canvas = drawingCanvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    canvas.setPointerCapture(event.pointerId);
+
+    isDrawingRef.current = true;
+
+    const point = getCanvasPoint(event);
+
+    currentStrokeRef.current = [point];
+  }
+
+  // =====================================================
+  // Continue Drawing
+  // =====================================================
+
+  function handlePointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!isDrawingRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const canvas = drawingCanvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return;
+    }
+
+    const point = getCanvasPoint(event);
+
+    const stroke = currentStrokeRef.current;
+
+    const previousPoint = stroke[stroke.length - 1];
+
+    if (!previousPoint) {
+      return;
+    }
+
+    stroke.push(point);
+
+    context.save();
+
+    context.strokeStyle = "#ec4899";
+    context.lineWidth = penSize;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+
+    context.beginPath();
+
+    context.moveTo(previousPoint.x, previousPoint.y);
+
+    context.lineTo(point.x, point.y);
+
+    context.stroke();
+
+    context.restore();
+  }
+
+  // =====================================================
+  // Finish Drawing
+  // =====================================================
+
+  function handlePointerUp(event: React.PointerEvent<HTMLCanvasElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!isDrawingRef.current) {
+      return;
+    }
+
+    isDrawingRef.current = false;
+
+    const stroke = currentStrokeRef.current;
+
+    if (stroke.length > 0) {
+      setDrawingStrokes((previous) => [...previous, stroke]);
+    }
+
+    currentStrokeRef.current = [];
+
+    try {
+      drawingCanvasRef.current?.releasePointerCapture(event.pointerId);
+    } catch {
+      // Ignore pointer capture errors
+    }
+  }
+
+  // =====================================================
+  // Undo Drawing
+  // =====================================================
+
+  function undoDrawing() {
+    setDrawingStrokes((previous) => previous.slice(0, -1));
+  }
+
+  // =====================================================
+  // Clear Drawing
+  // =====================================================
+
+  function clearDrawing() {
+    setDrawingStrokes([]);
+    currentStrokeRef.current = [];
+    isDrawingRef.current = false;
+  }
+
+  // =====================================================
+  // Open Practice
+  // =====================================================
+
+  function openPractice(event: React.MouseEvent) {
+    event.stopPropagation();
+
+    setIsPracticing(true);
+    setIsFlipped(false);
+    setShowPracticeGuide(true);
+    setDrawingStrokes([]);
+  }
+
+  // =====================================================
+  // Hide Practice
+  // =====================================================
+
+  function hidePractice(event: React.MouseEvent) {
+    event.stopPropagation();
+
+    setIsPracticing(false);
+    setDrawingStrokes([]);
+    currentStrokeRef.current = [];
+    isDrawingRef.current = false;
+  }
+
+  // =====================================================
+  // Navigation
+  // =====================================================
+
+  function nextKanji() {
+    if (currentIndex < totalWords - 1) {
+      setCurrentIndex((previousIndex) => previousIndex + 1);
+
+      setIsFlipped(false);
+      setIsPracticing(false);
+      setDrawingStrokes([]);
+
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }
+
+  function previousKanji() {
+    if (currentIndex > 0) {
+      setCurrentIndex((previousIndex) => previousIndex - 1);
+
+      setIsFlipped(false);
+      setIsPracticing(false);
+      setDrawingStrokes([]);
+
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }
+
+  // =====================================================
+  // Flashcard Click
+  // =====================================================
+
+  function handleFlashcardClick() {
+    if (isPracticing) {
+      return;
+    }
+
+    setIsFlipped((previous) => !previous);
+  }
+
+  // =====================================================
   // UI
   // =====================================================
 
@@ -299,7 +682,7 @@ function KanjiChapter() {
       <div className="mx-auto max-w-3xl">
         {/* =====================================================
             BACK
-        ====================================================== */}
+        ===================================================== */}
 
         <Link
           to="/kanji-master"
@@ -311,7 +694,7 @@ function KanjiChapter() {
 
         {/* =====================================================
             HEADER
-        ====================================================== */}
+        ===================================================== */}
 
         <div className="text-center">
           <p className="text-sm font-bold uppercase tracking-widest text-pink-400">
@@ -329,40 +712,194 @@ function KanjiChapter() {
 
         {/* =====================================================
             FLASHCARD
-        ====================================================== */}
+        ===================================================== */}
 
         <div
           role="button"
           tabIndex={0}
-          onClick={() => setIsFlipped((previous) => !previous)}
+          onClick={handleFlashcardClick}
           onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
+            if (!isPracticing && (event.key === "Enter" || event.key === " ")) {
               event.preventDefault();
 
               setIsFlipped((previous) => !previous);
             }
           }}
-          className="mt-8 min-h-[380px] w-full cursor-pointer rounded-[2.5rem] bg-white p-5 text-center shadow-sm transition hover:shadow-lg sm:p-8"
+          className={`mt-8 min-h-[380px] w-full rounded-[2.5rem] bg-white p-5 text-center shadow-sm transition hover:shadow-lg sm:p-8 ${
+            isPracticing ? "cursor-default" : "cursor-pointer"
+          }`}
         >
           {/* =====================================================
-              FRONT
-          ====================================================== */}
+              NORMAL FRONT
+          ===================================================== */}
 
-          {!isFlipped ? (
+          {!isFlipped && !isPracticing && (
             <div className="flex min-h-[320px] flex-col items-center justify-center">
               <p className="text-8xl font-bold text-gray-800">
                 {currentKanji.kanji}
               </p>
 
-              <p className="mt-8 text-sm font-semibold text-pink-400">
-                Click to flip ✨
+              {/* Practice Button */}
+
+              <button
+                type="button"
+                onClick={openPractice}
+                className="mt-8 rounded-full bg-pink-100 px-5 py-3 text-sm font-bold text-pink-500 transition hover:bg-pink-200 active:scale-95"
+              >
+                ✍️ Practice Writing
+              </button>
+
+              <p className="mt-4 text-xs font-semibold text-gray-300">
+                Click the card to flip ✨
               </p>
             </div>
-          ) : (
-            /* =====================================================
-               BACK
-            ====================================================== */
+          )}
 
+          {/* =====================================================
+              DRAWING PRACTICE
+          ===================================================== */}
+
+          {!isFlipped && isPracticing && (
+            <div
+              className="w-full"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {/* Practice Header */}
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-left">
+                  <p className="text-xs font-bold uppercase tracking-widest text-pink-400">
+                    Kanji Practice
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold text-gray-800">
+                    {currentKanji.kanji}
+                  </p>
+
+                  <p className="mt-1 text-xs text-gray-400">
+                    {currentKanji.burmese || ""}
+                  </p>
+                </div>
+
+                {/* Hide Practice */}
+
+                <button
+                  type="button"
+                  onClick={hidePractice}
+                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-500 transition hover:bg-pink-50 hover:text-pink-500 active:scale-95"
+                >
+                  <EyeOff size={14} />
+                  <span className="hidden sm:inline">Hide Practice</span>
+                  <span className="sm:hidden">Hide</span>
+                </button>
+              </div>
+
+              {/* Drawing Canvas */}
+
+              <div className="mx-auto mt-5 max-w-[500px] overflow-hidden rounded-[2rem] border border-pink-100 bg-white shadow-sm">
+                <div className="relative aspect-square w-full">
+                  <canvas
+                    ref={drawingCanvasRef}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                    className="h-full w-full touch-none cursor-crosshair"
+                    aria-label={`Practice writing ${currentKanji.kanji}`}
+                  />
+
+                  {drawingStrokes.length === 0 && showPracticeGuide && (
+                    <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-4 py-2 text-xs font-semibold text-gray-400 shadow-sm">
+                      Trace the Kanji ✨
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Practice Controls */}
+
+              <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+                {/* Guide */}
+
+                <button
+                  type="button"
+                  onClick={() => setShowPracticeGuide((previous) => !previous)}
+                  className={`flex items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-bold transition active:scale-95 sm:px-3 sm:text-sm ${
+                    showPracticeGuide
+                      ? "bg-pink-100 text-pink-500 hover:bg-pink-200"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                >
+                  {showPracticeGuide ? <Eye size={16} /> : <EyeOff size={16} />}
+
+                  <span className="hidden sm:inline">
+                    {showPracticeGuide ? "Hide Guide" : "Show Guide"}
+                  </span>
+
+                  <span className="sm:hidden">Guide</span>
+                </button>
+
+                {/* Undo */}
+
+                <button
+                  type="button"
+                  onClick={undoDrawing}
+                  disabled={drawingStrokes.length === 0}
+                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-purple-50 px-2 py-3 text-xs font-bold text-purple-500 transition hover:bg-purple-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-sm"
+                >
+                  <RotateCcw size={16} />
+                  Undo
+                </button>
+
+                {/* Clear */}
+
+                <button
+                  type="button"
+                  onClick={clearDrawing}
+                  disabled={drawingStrokes.length === 0}
+                  className="flex items-center justify-center gap-1.5 rounded-2xl bg-gray-100 px-2 py-3 text-xs font-bold text-gray-500 transition hover:bg-red-50 hover:text-red-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-sm"
+                >
+                  <Trash2 size={16} />
+                  Clear
+                </button>
+              </div>
+
+              {/* Pen Size */}
+
+              <div className="mt-4 rounded-2xl bg-purple-50 p-4 text-left">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-purple-500">
+                    Pen Size
+                  </p>
+
+                  <span className="text-xs font-bold text-purple-400">
+                    {penSize}px
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min="2"
+                  max="12"
+                  value={penSize}
+                  onChange={(event) => setPenSize(Number(event.target.value))}
+                  className="mt-3 w-full accent-pink-500"
+                />
+              </div>
+
+              {/* Practice Tip */}
+
+              <p className="mt-5 text-center text-xs font-medium text-gray-300">
+                🌸 Try tracing first, then hide the guide and write it yourself.
+              </p>
+            </div>
+          )}
+
+          {/* =====================================================
+              BACK
+          ===================================================== */}
+
+          {isFlipped && !isPracticing && (
             <div className="w-full">
               {/* Main Kanji */}
 
@@ -453,9 +990,7 @@ function KanjiChapter() {
 
                 {vocabulary.length > 0 && (
                   <div className="rounded-3xl bg-gradient-to-br from-pink-50 to-purple-50 p-3 sm:p-5">
-                    {/* =================================================
-                        VOCABULARY HEADER
-                    ================================================== */}
+                    {/* Vocabulary Header */}
 
                     <div className="mb-4 flex items-start justify-between gap-3 px-1">
                       <div className="flex items-center gap-3">
@@ -474,9 +1009,7 @@ function KanjiChapter() {
                         </div>
                       </div>
 
-                      {/* =================================================
-                          COLUMN SETTINGS
-                      ================================================== */}
+                      {/* Column Settings */}
 
                       <div className="relative shrink-0">
                         <button
@@ -495,10 +1028,6 @@ function KanjiChapter() {
                           <span className="hidden sm:inline">Columns</span>
                         </button>
 
-                        {/* =================================================
-                            COLUMN MENU
-                        ================================================== */}
-
                         {showColumnMenu && (
                           <div
                             onClick={(event) => event.stopPropagation()}
@@ -508,118 +1037,42 @@ function KanjiChapter() {
                               Show columns
                             </p>
 
-                            {/* KANJI */}
-
-                            <button
-                              type="button"
-                              onClick={() => toggleColumn("kanji")}
-                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
-                            >
-                              <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
-                                  visibleColumns.kanji
-                                    ? "border-pink-400 bg-pink-400 text-white"
-                                    : "border-gray-200 bg-white"
-                                }`}
+                            {(
+                              [
+                                ["kanji", "Kanji"],
+                                ["hiragana", "Hiragana"],
+                                ["meaning", "Meaning"],
+                                ["audio", "Audio"],
+                                ["hard", "Hard"],
+                              ] as [keyof VisibleColumns, string][]
+                            ).map(([column, label]) => (
+                              <button
+                                key={column}
+                                type="button"
+                                onClick={() => toggleColumn(column)}
+                                className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
                               >
-                                {visibleColumns.kanji && (
-                                  <Check size={11} strokeWidth={3} />
-                                )}
-                              </span>
-                              Kanji
-                            </button>
+                                <span
+                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
+                                    visibleColumns[column]
+                                      ? "border-pink-400 bg-pink-400 text-white"
+                                      : "border-gray-200 bg-white"
+                                  }`}
+                                >
+                                  {visibleColumns[column] && (
+                                    <Check size={11} strokeWidth={3} />
+                                  )}
+                                </span>
 
-                            {/* HIRAGANA */}
-
-                            <button
-                              type="button"
-                              onClick={() => toggleColumn("hiragana")}
-                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
-                            >
-                              <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
-                                  visibleColumns.hiragana
-                                    ? "border-pink-400 bg-pink-400 text-white"
-                                    : "border-gray-200 bg-white"
-                                }`}
-                              >
-                                {visibleColumns.hiragana && (
-                                  <Check size={11} strokeWidth={3} />
-                                )}
-                              </span>
-                              Hiragana
-                            </button>
-
-                            {/* MEANING */}
-
-                            <button
-                              type="button"
-                              onClick={() => toggleColumn("meaning")}
-                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
-                            >
-                              <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
-                                  visibleColumns.meaning
-                                    ? "border-pink-400 bg-pink-400 text-white"
-                                    : "border-gray-200 bg-white"
-                                }`}
-                              >
-                                {visibleColumns.meaning && (
-                                  <Check size={11} strokeWidth={3} />
-                                )}
-                              </span>
-                              Meaning
-                            </button>
-
-                            {/* AUDIO */}
-
-                            <button
-                              type="button"
-                              onClick={() => toggleColumn("audio")}
-                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
-                            >
-                              <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
-                                  visibleColumns.audio
-                                    ? "border-pink-400 bg-pink-400 text-white"
-                                    : "border-gray-200 bg-white"
-                                }`}
-                              >
-                                {visibleColumns.audio && (
-                                  <Check size={11} strokeWidth={3} />
-                                )}
-                              </span>
-                              Audio
-                            </button>
-
-                            {/* HARD */}
-
-                            <button
-                              type="button"
-                              onClick={() => toggleColumn("hard")}
-                              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-xs font-semibold text-gray-600 transition hover:bg-pink-50"
-                            >
-                              <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition ${
-                                  visibleColumns.hard
-                                    ? "border-pink-400 bg-pink-400 text-white"
-                                    : "border-gray-200 bg-white"
-                                }`}
-                              >
-                                {visibleColumns.hard && (
-                                  <Check size={11} strokeWidth={3} />
-                                )}
-                              </span>
-                              Hard
-                            </button>
+                                {label}
+                              </button>
+                            ))}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* =================================================
-                        HARD FILTER
-                    ================================================== */}
+                    {/* Hard Filter */}
 
                     <div
                       className="mb-4 flex items-center justify-center gap-2"
@@ -651,12 +1104,10 @@ function KanjiChapter() {
                       </button>
                     </div>
 
-                    {/* =================================================
-                        VOCABULARY TABLE
-                    ================================================== */}
+                    {/* Vocabulary Table */}
 
                     <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                      {/* HEADER */}
+                      {/* Header */}
 
                       <div
                         style={{
@@ -664,15 +1115,11 @@ function KanjiChapter() {
                         }}
                         className="grid items-center border-b border-pink-100 bg-pink-50/60"
                       >
-                        {/* KANJI */}
-
                         {visibleColumns.kanji && (
                           <div className="flex min-w-0 items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-pink-500 sm:px-3 sm:text-xs">
                             KANJI
                           </div>
                         )}
-
-                        {/* HIRAGANA */}
 
                         {visibleColumns.hiragana && (
                           <div className="flex min-w-0 items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-purple-500 sm:px-3 sm:text-xs">
@@ -680,23 +1127,17 @@ function KanjiChapter() {
                           </div>
                         )}
 
-                        {/* MEANING */}
-
                         {visibleColumns.meaning && (
                           <div className="flex min-w-0 items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-gray-500 sm:px-3 sm:text-xs">
                             🇲🇲 MEANING
                           </div>
                         )}
 
-                        {/* AUDIO */}
-
                         {visibleColumns.audio && (
                           <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-blue-500 sm:px-2 sm:text-xs">
                             AUDIO
                           </div>
                         )}
-
-                        {/* HARD */}
 
                         {visibleColumns.hard && (
                           <div className="flex items-center justify-center px-1 py-3 text-center text-[9px] font-extrabold tracking-wide text-orange-400 sm:px-2 sm:text-xs">
@@ -705,9 +1146,7 @@ function KanjiChapter() {
                         )}
                       </div>
 
-                      {/* =================================================
-                          NO HARD WORDS
-                      ================================================== */}
+                      {/* No Hard Words */}
 
                       {displayedVocabulary.length === 0 && (
                         <div className="px-5 py-10 text-center">
@@ -723,9 +1162,7 @@ function KanjiChapter() {
                         </div>
                       )}
 
-                      {/* =================================================
-                          VOCABULARY ROWS
-                      ================================================== */}
+                      {/* Vocabulary Rows */}
 
                       {displayedVocabulary.map((item, index) => {
                         const vocabularyId = getVocabularyId(
@@ -747,10 +1184,6 @@ function KanjiChapter() {
                                 : ""
                             } ${isHard ? "bg-orange-50/70" : "bg-white"}`}
                           >
-                            {/* =================================================
-                                  KANJI
-                              ================================================== */}
-
                             {visibleColumns.kanji && (
                               <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
                                 <p
@@ -762,10 +1195,6 @@ function KanjiChapter() {
                                 </p>
                               </div>
                             )}
-
-                            {/* =================================================
-                                  HIRAGANA
-                              ================================================== */}
 
                             {visibleColumns.hiragana && (
                               <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
@@ -781,10 +1210,6 @@ function KanjiChapter() {
                               </div>
                             )}
 
-                            {/* =================================================
-                                  MEANING
-                              ================================================== */}
-
                             {visibleColumns.meaning && (
                               <div className="flex min-w-0 items-center justify-center px-1 py-4 text-center sm:px-3">
                                 <p
@@ -798,10 +1223,6 @@ function KanjiChapter() {
                                 </p>
                               </div>
                             )}
-
-                            {/* =================================================
-                                  AUDIO
-                              ================================================== */}
 
                             {visibleColumns.audio && (
                               <div className="flex items-center justify-center px-1 py-4">
@@ -820,10 +1241,6 @@ function KanjiChapter() {
                                 </button>
                               </div>
                             )}
-
-                            {/* =================================================
-                                  HARD
-                              ================================================== */}
 
                             {visibleColumns.hard && (
                               <div className="flex items-center justify-center px-1 py-4">
@@ -863,9 +1280,7 @@ function KanjiChapter() {
                       })}
                     </div>
 
-                    {/* =================================================
-                        CUTE TIP
-                    ================================================== */}
+                    {/* Cute Tip */}
 
                     <div className="mt-4 flex items-center justify-center gap-2 text-center">
                       <Flame size={13} className="text-orange-300" />
@@ -878,9 +1293,7 @@ function KanjiChapter() {
                 )}
               </div>
 
-              {/* =================================================
-                  FLIP HINT
-              ================================================== */}
+              {/* Flip Hint */}
 
               <p className="mt-6 text-center text-xs font-semibold text-gray-300">
                 Click anywhere on the card to flip back ✨
@@ -890,8 +1303,8 @@ function KanjiChapter() {
         </div>
 
         {/* =====================================================
-            JISHO BUTTON
-        ====================================================== */}
+            JISHO
+        ===================================================== */}
 
         <button
           type="button"
@@ -899,12 +1312,12 @@ function KanjiChapter() {
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-pink-100 px-5 py-4 font-bold text-pink-500 transition hover:bg-pink-200 active:scale-[0.99]"
         >
           <Search size={19} />
-          ✍️ Kanji Drawing
+           Kanji Drawing
         </button>
 
         {/* =====================================================
             NAVIGATION
-        ====================================================== */}
+        ===================================================== */}
 
         <div className="mt-6 flex items-center justify-between gap-3">
           {/* Previous */}
