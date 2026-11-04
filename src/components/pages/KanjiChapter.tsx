@@ -207,8 +207,8 @@ function KanjiChapter() {
   // Vocabulary ID
   // =====================================================
 
-  function getVocabularyId(word: string, reading: string) {
-    return `${word}__${reading}`;
+  function getVocabularyId(word: string, reading: string | undefined) {
+    return `${word}__${reading ?? ""}`;
   }
 
   // =====================================================
@@ -217,7 +217,7 @@ function KanjiChapter() {
 
   const displayedVocabulary = showHardOnly
     ? vocabulary.filter((item) => {
-        const vocabularyId = getVocabularyId(item.word, item.reading);
+        const vocabularyId = getVocabularyId(item.word, item.reading ?? "");
 
         return hardVocabulary[vocabularyId] === true;
       })
@@ -1182,7 +1182,7 @@ function KanjiChapter() {
                       {displayedVocabulary.map((item, index) => {
                         const vocabularyId = getVocabularyId(
                           item.word,
-                          item.reading,
+                          item.reading ,
                         );
 
                         const isHard = hardVocabulary[vocabularyId] === true;
@@ -1264,7 +1264,7 @@ function KanjiChapter() {
                                   onClick={(event) => {
                                     event.stopPropagation();
 
-                                    toggleHard(item.word, item.reading);
+                                    toggleHard(item.word, item.reading ?? "");
                                   }}
                                   aria-label={
                                     isHard
