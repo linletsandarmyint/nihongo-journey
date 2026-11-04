@@ -25,6 +25,8 @@ import { kanjiChapter5 } from "../../data/kanjiChapter5";
 import { kanjiChapter6 } from "../../data/kanjiChapter6";
 import { kanjiChapter7 } from "../../data/kanjiChapter7";
 import { kanjiChapter8 } from "../../data/kanjiChapter8";
+import { kanjiChapter9 } from "../../data/kanjiChapter9";
+import { kanjiChapter10 } from "../../data/kanjiChapter10";
 
 type Point = {
   x: number;
@@ -177,21 +179,25 @@ function KanjiChapter() {
   // =====================================================
 
   const vocabularySource =
-    chapterId === "8"
-      ? kanjiChapter8
-      : chapterId === "7"
-        ? kanjiChapter7
-        : chapterId === "6"
-          ? kanjiChapter6
-          : chapterId === "5"
-            ? kanjiChapter5
-            : chapterId === "4"
-              ? kanjiChapter4
-              : chapterId === "3"
-                ? kanjiChapter3
-                : chapterId === "2"
-                  ? kanjiChapter2
-                  : kanjiVocabulary;
+    chapterId === "10"
+      ? kanjiChapter10
+      : chapterId === "9"
+        ? kanjiChapter9
+        : chapterId === "8"
+          ? kanjiChapter8
+          : chapterId === "7"
+            ? kanjiChapter7
+            : chapterId === "6"
+              ? kanjiChapter6
+              : chapterId === "5"
+                ? kanjiChapter5
+                : chapterId === "4"
+                  ? kanjiChapter4
+                  : chapterId === "3"
+                    ? kanjiChapter3
+                    : chapterId === "2"
+                      ? kanjiChapter2
+                      : kanjiVocabulary;
 
   const vocabulary =
     vocabularySource.find((item) => item.kanji === currentKanji.kanji)
